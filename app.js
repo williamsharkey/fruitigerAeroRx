@@ -534,15 +534,48 @@
   };
 
   // ================================================================
-  // 5. TTS ENGINE (Web Speech API)
+  // 5. TTS ENGINE (Ethereal / Cocteau Twins style)
   // ================================================================
+  var reverbShimmerNodes = [];
+
+  function playReverbShimmer() {
+    // Ethereal pad shimmer that plays alongside speech - Cocteau Twins vibe
+    if (!S.audioReady) return;
+    var ctx = actx;
+    var now = ctx.currentTime;
+    // Play 3 soft detuned shimmer tones
+    var freqs = [440, 554, 660]; // A4, C#5, E5 (A major triad, dreamy)
+    freqs.forEach(function(f, i) {
+      var osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator();
+      var gain = ctx.createGain();
+      var filt = ctx.createBiquadFilter();
+      osc1.type = "sine"; osc1.frequency.value = f * 1.5; // up an octave for shimmer
+      osc2.type = "sine"; osc2.frequency.value = f * 1.503; // slight detune = chorus
+      filt.type = "lowpass"; filt.frequency.value = 2000;
+      filt.Q.value = 2;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.012, now + 0.8);
+      gain.gain.setValueAtTime(0.012, now + 4);
+      gain.gain.linearRampToValueAtTime(0, now + 7);
+      osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc1.start(now + i * 0.3); osc2.start(now + i * 0.3);
+      osc1.stop(now + 7); osc2.stop(now + 7);
+      reverbShimmerNodes.push({ stop: function() { try { osc1.stop(); osc2.stop(); } catch(e){} } });
+    });
+  }
+
+  function stopReverbShimmer() {
+    reverbShimmerNodes.forEach(function(n) { n.stop(); });
+    reverbShimmerNodes = [];
+  }
+
   function speak(text, onEnd) {
     if (S.muted || !window.speechSynthesis) { if (onEnd) onEnd(); return; }
     window.speechSynthesis.cancel();
     var utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.92;
-    utter.pitch = 1.15;
-    utter.volume = 0.8;
+    utter.rate = 0.82;   // slower, more ethereal
+    utter.pitch = 1.55;  // high, airy, Cocteau Twins
+    utter.volume = 0.75;
     // Prefer a female English voice
     var voices = speechSynthesis.getVoices();
     var preferred = voices.find(function(v) { return /samantha|karen|moira|fiona|victoria/i.test(v.name); });
@@ -551,6 +584,8 @@
     if (preferred) utter.voice = preferred;
     utter.onend = function () { S.speaking = false; if (onEnd) onEnd(); };
     S.speaking = true;
+    // Play ethereal shimmer pad alongside the voice
+    playReverbShimmer();
     speechSynthesis.speak(utter);
   }
 
@@ -738,15 +773,15 @@
       var x = cx + Math.cos(angle) * radius - 30;
       var y = cy + Math.sin(angle) * radius - 8;
       words[i].style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;" +
-        "font-size:0.6rem;font-family:Cabin,sans-serif;font-weight:600;" +
-        "color:rgba(100,180,255,0.35);pointer-events:none;white-space:nowrap;" +
-        "text-shadow:0 0 8px rgba(100,180,255,0.15);transition:none;";
+        "font-size:0.82rem;font-family:Cabin,sans-serif;font-weight:700;" +
+        "color:rgba(30,100,180,0.55);pointer-events:none;white-space:nowrap;" +
+        "text-shadow:0 0 6px rgba(60,140,220,0.3), 0 1px 2px rgba(0,40,80,0.15);transition:none;";
     }
     // Draw connecting lines on trail canvas
     if (S.trailCtx && n > 1) {
       var ctx = S.trailCtx;
-      ctx.strokeStyle = "rgba(100,180,255,0.08)";
-      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = "rgba(30,100,180,0.15)";
+      ctx.lineWidth = 0.8;
       for (var j = 0; j < n; j++) {
         for (var k = j + 1; k < n; k++) {
           var a1 = (j / n) * Math.PI * 2 + t * 0.3;
@@ -763,22 +798,131 @@
   }
 
   // ================================================================
-  // 12. HOVER MICRO-INTERACTIONS
+  // 12. HOVER MICRO-INTERACTIONS + DRUG HOVER NARRATION
   // ================================================================
+  var drugMelodyTimeout = null;
+  var drugMelodyNodes = [];
+
+  // Hash a string to a number for deterministic melody generation
+  function hashStr(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
+  // Play a unique short melody for a drug (deterministic per slug)
+  function playDrugMelody(slug) {
+    stopDrugMelody();
+    if (!S.audioReady) return;
+    var ctx = actx;
+    var h = hashStr(slug);
+    var scale = SCALES[h % SCALES.length];
+    var root = 55 + (h % 12); // variety of roots around G3-F#4
+    var tempo = 0.25 + (h % 4) * 0.05;
+    var waveTypes = ["sine", "triangle", "sine", "square"];
+    var waveType = waveTypes[h % waveTypes.length];
+    var now = ctx.currentTime;
+
+    // 8-note phrase
+    for (var i = 0; i < 8; i++) {
+      var deg = scale[(h + i * 3) % scale.length];
+      var oct = ((h + i) % 3 === 0) ? 12 : 0;
+      var freq = midiToFreq(root + deg + oct);
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      var filt = ctx.createBiquadFilter();
+      osc.type = waveType;
+      osc.frequency.value = freq;
+      filt.type = "lowpass";
+      filt.frequency.value = 1200 + (h % 800);
+      var noteStart = now + i * tempo;
+      var noteDur = tempo * 1.8;
+      gain.gain.setValueAtTime(0, noteStart);
+      gain.gain.linearRampToValueAtTime(0.04, noteStart + 0.03);
+      gain.gain.setValueAtTime(0.04, noteStart + noteDur * 0.5);
+      gain.gain.linearRampToValueAtTime(0, noteStart + noteDur);
+      osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc.start(noteStart);
+      osc.stop(noteStart + noteDur);
+      drugMelodyNodes.push({ stop: function() { try { this.o.stop(); } catch(e){} }, o: osc });
+    }
+  }
+
+  function stopDrugMelody() {
+    if (drugMelodyTimeout) { clearTimeout(drugMelodyTimeout); drugMelodyTimeout = null; }
+    drugMelodyNodes.forEach(function(n) { n.stop(); });
+    drugMelodyNodes = [];
+  }
+
+  // Play splash SFX (bigger than water trail sound)
+  function playSplashSfx() {
+    if (!S.audioReady) return;
+    var ctx = actx;
+    var now = ctx.currentTime;
+    // Multiple bandpass noise bursts for splash
+    for (var i = 0; i < 3; i++) {
+      var buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * 0.05;
+      var src = ctx.createBufferSource(); src.buffer = buf;
+      var f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.value = 800 + i * 1500 + Math.random() * 500;
+      f.Q.value = 3;
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.08, now + i * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.12);
+      src.connect(f); f.connect(gain); gain.connect(ctx.destination);
+      src.start(now + i * 0.04);
+    }
+  }
+
   function setupHoverEffects() {
-    var targets = document.querySelectorAll(".glass, .glass-strong, .drug-card, .faq-q, .btn-aero, .nature-panel, .outlook-card, .vista-gadget");
+    // General hover effects
+    var targets = document.querySelectorAll(".glass, .glass-strong, .faq-q, .btn-aero, .nature-panel, .outlook-card, .vista-gadget");
     targets.forEach(function (el) {
       el.addEventListener("mouseenter", function () {
         el.style.transition = "transform 0.3s ease, box-shadow 0.3s ease";
-        if (!el.classList.contains("drug-card")) {
-          el.style.transform = "scale(1.008) translateY(-1px)";
-        }
+        el.style.transform = "scale(1.008) translateY(-1px)";
         playSfx("hover");
       });
       el.addEventListener("mouseleave", function () {
-        if (!el.classList.contains("drug-card")) {
-          el.style.transform = "";
+        el.style.transform = "";
+      });
+    });
+
+    // Drug card hover -> triggers Eevee narration + unique melody
+    var drugCards = document.querySelectorAll(".drug-card");
+    drugCards.forEach(function (card) {
+      card.addEventListener("mouseenter", function () {
+        playSfx("hover");
+        if (!S.audioReady) return;
+        var slug = card.getAttribute("data-eevee") || "";
+        if (!slug) {
+          try {
+            var href = card.getAttribute("href") || "";
+            var match = href.match(/\/p\/(.+)/);
+            if (match) slug = match[1];
+          } catch(e) {}
         }
+        if (!slug) return;
+
+        // Play unique melody for this drug
+        playDrugMelody(slug);
+
+        // Trigger Eevee narration (immediate, no cooldown check for hover)
+        if (!S.muted && !S.speaking) {
+          var script = pickScript(slug);
+          if (script) {
+            glowDiv(card);
+            typeInBubble(script, function () {
+              speak(script);
+            });
+          }
+        }
+      });
+      card.addEventListener("mouseleave", function () {
+        stopDrugMelody();
       });
     });
   }
@@ -887,13 +1031,32 @@
       playSfx("click");
     });
 
-    // Scroll SFX (throttled)
+    // Scroll SFX (richer, varies pitch with scroll direction)
     var scrollThrottle = 0;
+    var lastScrollY = window.scrollY;
     window.addEventListener("scroll", function () {
       var now = Date.now();
-      if (now - scrollThrottle > 300) {
+      if (now - scrollThrottle > 250) {
         scrollThrottle = now;
-        if (S.audioReady) playSfx("scroll");
+        if (S.audioReady) {
+          var ctx = actx;
+          var t = ctx.currentTime;
+          var dir = window.scrollY > lastScrollY ? 1 : -1;
+          lastScrollY = window.scrollY;
+          // Richer scroll: two detuned tones with direction-dependent pitch
+          var baseFreq = dir > 0 ? 180 + Math.random() * 80 : 260 + Math.random() * 80;
+          var osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator();
+          var gain = ctx.createGain();
+          var filt = ctx.createBiquadFilter();
+          osc1.type = "triangle"; osc1.frequency.value = baseFreq;
+          osc2.type = "sine"; osc2.frequency.value = baseFreq * 1.5;
+          filt.type = "lowpass"; filt.frequency.value = 800;
+          gain.gain.setValueAtTime(0.035, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+          osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+          osc1.start(t); osc2.start(t);
+          osc1.stop(t + 0.2); osc2.stop(t + 0.2);
+        }
       }
     });
 
@@ -902,16 +1065,21 @@
       if (S.audioReady) playSfx("goodbye");
     });
 
-    // First interaction -> startup sound
+    // First interaction -> startup sound + autostart music
     var startupPlayed = false;
-    document.addEventListener("click", function firstClick() {
+    function onFirstInteraction() {
       if (startupPlayed) return;
       startupPlayed = true;
       ensureAudio();
       playSfx("startup");
+      // Autostart ambient music
+      setTimeout(function() { startMusic(); }, 1200);
       // Load voices for TTS
       if (speechSynthesis && speechSynthesis.getVoices) speechSynthesis.getVoices();
-    }, { once: false });
+    }
+    document.addEventListener("click", onFirstInteraction, { once: false });
+    document.addEventListener("scroll", onFirstInteraction, { once: true });
+    document.addEventListener("mousemove", onFirstInteraction, { once: true });
   }
 
   function tagSections() {
@@ -953,8 +1121,10 @@
   }
 
   // ================================================================
-  // 17. SWIMMING FISH
+  // 17. SWIMMING FISH (with water sounds)
   // ================================================================
+  var fishWaterInterval = null;
+
   function setupFish() {
     var pond = document.getElementById("fishPond");
     if (!pond) return;
@@ -987,6 +1157,11 @@
       var el = document.createElement("div");
       el.className = "fish";
       el.innerHTML = makeFishSVG(FISH_COLORS[i % FISH_COLORS.length]);
+      // Fish hover -> splash sound (pointer-events enabled for hover detection)
+      el.style.pointerEvents = "auto";
+      el.addEventListener("mouseenter", function() {
+        if (S.audioReady) playSplashSfx();
+      });
       pond.appendChild(el);
 
       var goingRight = Math.random() > 0.5;
@@ -1002,17 +1177,35 @@
       });
     }
 
+    // Ambient water sounds when fish pond is visible
+    var fishObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          // Start periodic gentle water sounds
+          if (!fishWaterInterval && S.audioReady) {
+            fishWaterInterval = setInterval(function() {
+              if (S.audioReady) playSfx("water");
+            }, 1500 + Math.random() * 2000);
+          }
+        } else {
+          if (fishWaterInterval) {
+            clearInterval(fishWaterInterval);
+            fishWaterInterval = null;
+          }
+        }
+      });
+    }, { threshold: 0.1 });
+    fishObserver.observe(pond);
+
     function animateFish() {
       var w = pond.offsetWidth || 800;
       var t = Date.now() / 1000;
       for (var i = 0; i < fishState.length; i++) {
         var f = fishState[i];
         f.x += f.vx;
-        // Weave up and down
         var yOff = Math.sin(t * f.freq + f.phase) * f.amp;
         var displayY = f.y + yOff;
 
-        // Turn around at edges
         if (f.x > w + 80) {
           f.vx = -(1 + Math.random() * 1.5);
         } else if (f.x < -80) {
