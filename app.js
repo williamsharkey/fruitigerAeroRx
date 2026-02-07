@@ -10,7 +10,7 @@
   var S = {
     muted: false,         // Eevee mute toggle
     musicPlaying: false,
-    currentTrack: 0,
+    currentTrack: Math.floor(Math.random() * 9),  // Random starting track
     audioReady: false,
     spokenSets: {},       // tracks which scripts played per div id
     lastSpokenDiv: null,
@@ -23,6 +23,14 @@
     trailCanvas: null,
     trailCtx: null,
     knowledgeWeb: null,
+    currentNoteFreq: 0,   // most recently played note frequency for pitch-matching
+    cart: [],              // shopping cart items [{name, generic, price, original, discount, img, slug}]
+    kwSpinBoost: 0,        // knowledge web explosion spin boost
+    kwRadiusBoost: 0,      // knowledge web explosion radius boost
+    kwSizeBoost: 0,        // knowledge web explosion font size boost
+    kwExploding: false,    // knowledge web currently exploding
+    kwHoverReverse: false, // reverse spin when hovering drug card
+    trumpSpeaking: false,  // true while Trump is reading an email - cannot be interrupted
   };
 
   // ---- CONSTANTS ----
@@ -110,286 +118,215 @@
       src.start(now);
     }
     else if (type === "hover") {
-      osc = ctx.createOscillator(); gain = ctx.createGain();
-      osc.type = "sine"; osc.frequency.value = 600 + Math.random() * 400;
-      gain.gain.setValueAtTime(0.03, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(now); osc.stop(now + 0.06);
+      // Subtle filtered noise whoosh instead of beepy oscillator
+      var dur = 0.15;
+      var buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      var d2 = buf.getChannelData(0);
+      for (var j2 = 0; j2 < d2.length; j2++) d2[j2] = (Math.random() * 2 - 1);
+      var src2 = ctx.createBufferSource(); src2.buffer = buf;
+      var filt = ctx.createBiquadFilter();
+      filt.type = "bandpass"; filt.frequency.value = 2000 + Math.random() * 1500; filt.Q.value = 1.5;
+      gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.025, now);
+      gain.gain.linearRampToValueAtTime(0.04, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      src2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      src2.start(now);
     }
   }
 
   // ================================================================
-  // 3. AMBIENT MUSIC ENGINE (Tone.js-free, pure Web Audio)
+  // 3. REAL MIDI MUSIC ENGINE (soundfont-player + midi-player-js)
   // ================================================================
-  var musicNodes = [];
-  var SCALES = [
-    [0,2,4,7,9],      // pentatonic major
-    [0,2,3,7,8],      // pentatonic minor
-    [0,2,4,5,7,9,11], // major
-    [0,2,3,5,7,8,10], // natural minor
-    [0,2,4,7,9,12,14],// wide pentatonic
-  ];
-  var ROOTS = [48, 50, 52, 53, 55, 57, 59, 60]; // C3..C4
-
   function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-  var TOTAL_TRACKS = 40;
-  // Track types: "pad", "arp", "chip", "bass", "crystal", "pluck", "choir", "perc"
-  var TRACK_TYPES = ["pad","arp","chip","pad","crystal","arp","bass","pluck",
-                     "chip","pad","arp","crystal","choir","bass","pad","arp",
-                     "pluck","chip","crystal","pad","arp","chip","bass","pad",
-                     "crystal","pluck","arp","choir","pad","chip","arp","pad",
-                     "bass","crystal","pluck","chip","arp","pad","choir","arp"];
+  var MIDI_FILES = [
+    { file: "midi/Gymnopedie1.mid", name: "Satie - Gymnop\u00e9die No.1" },
+    { file: "midi/debussy-clair-de-lune.mid", name: "Debussy - Clair de Lune" },
+    { file: "midi/chopin-nocturne-op9-no2.mid", name: "Chopin - Nocturne Op.9 No.2" },
+    { file: "midi/prelude15.mid", name: "Chopin - Raindrop Prelude" },
+    { file: "midi/bach-prelude-in-cm-piano.mid", name: "Bach - Prelude in C minor" },
+    { file: "midi/rachmaninov-var18-orch.mid", name: "Rachmaninov - Variation 18 (Paganini)" },
+    { file: "midi/Satie-Gymnopedie1-cello-piano.mid", name: "Satie - Gymnop\u00e9die (Cello)" },
+    { file: "midi/Satie-Gymnopedie1-flute-piano.mid", name: "Satie - Gymnop\u00e9die (Flute)" },
+    { file: "midi/Satie-Gymnopedie1-violin-piano.mid", name: "Satie - Gymnop\u00e9die (Violin)" }
+  ];
+  var TOTAL_TRACKS = MIDI_FILES.length;
 
-  function playNote(ctx, freq, dur, vol, type, startTime) {
-    var now = startTime || ctx.currentTime;
-    var osc1 = ctx.createOscillator();
-    var gain = ctx.createGain();
-    var filt = ctx.createBiquadFilter();
-    filt.type = "lowpass";
+  var sfInstrument = null; // soundfont-player instrument instance
+  var midiPlayer = null;   // MidiPlayer.Player instance
+  var sfLoading = false;
 
-    if (type === "pad") {
-      var osc2 = ctx.createOscillator();
-      osc1.type = "sine"; osc1.frequency.value = freq;
-      osc2.type = "triangle"; osc2.frequency.value = freq * 1.002;
-      filt.frequency.value = freq * 3;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(vol, now + dur * 0.3);
-      gain.gain.setValueAtTime(vol, now + dur * 0.6);
-      gain.gain.linearRampToValueAtTime(0, now + dur);
-      osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc1.start(now); osc2.start(now);
-      osc1.stop(now + dur); osc2.stop(now + dur);
-    }
-    else if (type === "arp" || type === "pluck") {
-      osc1.type = "triangle";
-      osc1.frequency.value = freq;
-      filt.frequency.setValueAtTime(freq * 6, now);
-      filt.frequency.exponentialRampToValueAtTime(freq * 1.5, now + dur * 0.6);
-      filt.Q.value = 4;
-      gain.gain.setValueAtTime(vol * 1.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc1.start(now); osc1.stop(now + dur);
-    }
-    else if (type === "chip") {
-      osc1.type = "square";
-      osc1.frequency.value = freq;
-      filt.frequency.value = 2000;
-      gain.gain.setValueAtTime(vol * 0.6, now);
-      gain.gain.setValueAtTime(vol * 0.6, now + dur * 0.7);
-      gain.gain.linearRampToValueAtTime(0, now + dur);
-      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc1.start(now); osc1.stop(now + dur);
-    }
-    else if (type === "bass") {
-      osc1.type = "sawtooth";
-      osc1.frequency.value = freq / 2; // octave down
-      filt.frequency.value = 400;
-      filt.Q.value = 6;
-      gain.gain.setValueAtTime(vol * 1.5, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc1.start(now); osc1.stop(now + dur);
-    }
-    else if (type === "crystal") {
-      // High sparkly sine with fast decay
-      osc1.type = "sine";
-      osc1.frequency.value = freq * 2;
-      filt.frequency.value = 8000;
-      gain.gain.setValueAtTime(vol * 0.8, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + dur * 1.2);
-      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc1.start(now); osc1.stop(now + dur * 1.2);
-    }
-    else if (type === "choir") {
-      // 3 detuned sines for choir effect
-      [0, 0.003, -0.004].forEach(function(detune) {
-        var o = ctx.createOscillator();
-        o.type = "sine"; o.frequency.value = freq * (1 + detune);
-        var g = ctx.createGain();
-        g.gain.setValueAtTime(0, now);
-        g.gain.linearRampToValueAtTime(vol * 0.5, now + dur * 0.4);
-        g.gain.setValueAtTime(vol * 0.5, now + dur * 0.7);
-        g.gain.linearRampToValueAtTime(0, now + dur);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(now); o.stop(now + dur);
-      });
-    }
-    else { // perc - noise burst
-      var buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-      var d = buf.getChannelData(0);
-      for (var j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1);
-      var src = ctx.createBufferSource(); src.buffer = buf;
-      filt.frequency.value = freq; filt.Q.value = 10; filt.type = "bandpass";
-      gain.gain.setValueAtTime(vol * 0.5, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-      src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      src.start(now);
-    }
+  function loadSoundfont(cb) {
+    if (sfInstrument) { if (cb) cb(); return; }
+    if (sfLoading) return;
+    sfLoading = true;
+    var ctx = ensureAudio();
+    Soundfont.instrument(ctx, "acoustic_grand_piano", { gain: 0.864 }).then(function(inst) {
+      sfInstrument = inst;
+      sfLoading = false;
+      if (cb) cb();
+    }).catch(function() { sfLoading = false; });
   }
 
-  function generateTrack(trackIdx) {
-    if (!S.audioReady) return;
-    var ctx = actx;
-    var type = TRACK_TYPES[trackIdx % TOTAL_TRACKS];
-    var scaleIdx = trackIdx % SCALES.length;
-    var scale = SCALES[scaleIdx];
-    var root = ROOTS[trackIdx % ROOTS.length];
+  function playMidiTrack(trackIdx) {
+    if (!S.audioReady || !sfInstrument) return;
+    if (midiPlayer) { midiPlayer.stop(); midiPlayer = null; }
 
-    // Tempo varies by type
-    var tempo;
-    if (type === "arp" || type === "chip" || type === "crystal") {
-      tempo = 0.12 + (trackIdx % 4) * 0.04; // fast arpeggios
-    } else if (type === "bass") {
-      tempo = 0.4 + (trackIdx % 3) * 0.1; // slower bass
-    } else {
-      tempo = 0.6 + (trackIdx % 5) * 0.15; // pads/choir
-    }
-
-    // Note count varies by type
-    var noteCount = (type === "arp" || type === "chip" || type === "crystal") ? 32 : 16;
-
-    var notes = [];
-    for (var i = 0; i < noteCount; i++) {
-      var deg, octave;
-      if (type === "arp") {
-        // Ascending/descending pattern
-        deg = scale[i % scale.length];
-        octave = Math.floor(i / scale.length) % 2 === 0 ? 0 : 12;
-      } else if (type === "bass") {
-        deg = scale[Math.floor(Math.random() * 3)]; // stick to lower degrees
-        octave = 0;
-      } else {
-        deg = scale[Math.floor(Math.random() * scale.length)];
-        octave = Math.floor(Math.random() * 2) * 12;
+    var info = MIDI_FILES[trackIdx % TOTAL_TRACKS];
+    var player = new MidiPlayer.Player(function(event) {
+      if (!S.musicPlaying) return;
+      if (event.name === "Note on" && event.velocity > 0) {
+        var freq = midiToFreq(event.noteNumber);
+        S.currentNoteFreq = freq;
+        sfInstrument.play(event.noteName || event.noteNumber, actx.currentTime, {
+          gain: (event.velocity / 127) * 0.84,
+          duration: 2
+        });
       }
-      notes.push(root + deg + octave);
-    }
-
-    notes.forEach(function (midi, idx) {
-      var freq = midiToFreq(midi);
-      var dur = (type === "arp" || type === "chip" || type === "crystal")
-        ? tempo * (0.8 + Math.random() * 0.4)
-        : tempo * (1.5 + Math.random());
-      setTimeout(function () {
-        if (S.musicPlaying) playNote(ctx, freq, dur, 0.03, type);
-      }, idx * tempo * 1000);
     });
 
-    var totalDur = notes.length * tempo * 1000;
-    if (S.musicPlaying) {
-      setTimeout(function () {
+    // When track ends, advance to next
+    player.on("endOfFile", function() {
+      if (S.musicPlaying) {
         S.currentTrack = (S.currentTrack + 1) % TOTAL_TRACKS;
-        generateTrack(S.currentTrack);
-      }, totalDur);
+        updateMusicBtn();
+        setTimeout(function() { playMidiTrack(S.currentTrack); }, 500);
+      }
+    });
+
+    // Load MIDI from embedded data or fetch as fallback
+    if (window.MIDI_DATA && MIDI_DATA[info.file]) {
+      // Use embedded base64 data
+      player.loadDataUri("data:audio/midi;base64," + MIDI_DATA[info.file]);
+      midiPlayer = player;
+      player.play();
+    } else {
+      // Fallback: try to fetch (works when served via http://)
+      fetch(info.file).then(function(r) { return r.arrayBuffer(); }).then(function(buf) {
+        var arr = new Uint8Array(buf);
+        var b64 = "";
+        for (var i = 0; i < arr.length; i++) b64 += String.fromCharCode(arr[i]);
+        player.loadDataUri("data:audio/midi;base64," + btoa(b64));
+        midiPlayer = player;
+        player.play();
+      }).catch(function(err) {
+        console.warn("MIDI load failed:", info.file, err);
+      });
     }
   }
 
   function startMusic() {
     ensureAudio();
     S.musicPlaying = true;
-    generateTrack(S.currentTrack);
     updateMusicBtn();
+    loadSoundfont(function() {
+      playMidiTrack(S.currentTrack);
+    });
   }
   function stopMusic() {
     S.musicPlaying = false;
+    if (midiPlayer) { midiPlayer.stop(); midiPlayer = null; }
     updateMusicBtn();
   }
   function nextTrack() {
     S.currentTrack = (S.currentTrack + 1) % TOTAL_TRACKS;
-    if (S.musicPlaying) { stopMusic(); setTimeout(startMusic, 100); }
-    else { updateMusicBtn(); }
+    if (S.musicPlaying) { if (midiPlayer) midiPlayer.stop(); playMidiTrack(S.currentTrack); }
+    updateMusicBtn();
   }
   function prevTrack() {
     S.currentTrack = (S.currentTrack + TOTAL_TRACKS - 1) % TOTAL_TRACKS;
-    if (S.musicPlaying) { stopMusic(); setTimeout(startMusic, 100); }
-    else { updateMusicBtn(); }
+    if (S.musicPlaying) { if (midiPlayer) midiPlayer.stop(); playMidiTrack(S.currentTrack); }
+    updateMusicBtn();
   }
   function updateMusicBtn() {
     var btn = document.getElementById("playPauseBtn");
     if (btn) btn.textContent = S.musicPlaying ? "||" : "\u25B6";
     var lbl = document.getElementById("trackLabel");
-    var typeName = TRACK_TYPES[S.currentTrack % TOTAL_TRACKS];
-    if (lbl) lbl.textContent = (S.currentTrack + 1) + "/" + TOTAL_TRACKS + " " + typeName;
+    var name = MIDI_FILES[S.currentTrack % TOTAL_TRACKS].name;
+    if (lbl) lbl.textContent = (S.currentTrack + 1) + "/" + TOTAL_TRACKS + " " + name;
   }
+
+  // Deterministic drug melody using soundfont (or oscillator fallback)
+  var SCALES = [
+    [0,2,4,7,9], [0,2,3,7,8], [0,2,4,5,7,9,11], [0,2,3,5,7,8,10], [0,2,4,7,9,12,14]
+  ];
 
   // ================================================================
   // 4. EEVEE SCRIPTS DATABASE (10+ per major section)
   // ================================================================
   var SCRIPTS = {
     "parody-banner": [
-      "This is a parody, of course. But the savings data is real, sourced directly from TrumpRx.gov.",
-      "Every price you see here comes from the official government site. We just made it prettier.",
-      "A design tribute wrapped around real prescription pricing. The best of both worlds.",
-      "Parody and public service, together at last.",
-      "All data is verifiable at TrumpRx.gov. We simply reimagined the presentation.",
-      "Think of this as the director's cut of prescription drug savings.",
-      "The numbers are real. The aesthetic is aspirational.",
-      "Fair use, fair prices, fair play.",
-      "Satire with substance. Every figure checks out.",
-      "We believe beautiful design and accessible healthcare can coexist."
+      "Welcome to the future of prescription pricing. Your health journey starts here.",
+      "Every price you see reflects our commitment to making healthcare accessible for all Americans.",
+      "Transparent pricing is the foundation of patient trust. We take that seriously.",
+      "Our mission is simple: world-class medications at prices every family can afford.",
+      "Pricing verified and updated daily to ensure you always see the most current savings.",
+      "Your wellness is our priority. Let us help you navigate your prescription options.",
+      "Empowering patients with clear, honest pricing information since day one.",
+      "No hidden fees. No surprise costs. Just straightforward prescription savings.",
+      "We believe every American deserves access to affordable medication.",
+      "Innovation in pricing, excellence in care. That is the TrumpRx promise."
     ],
     "hero": [
-      "Welcome to FruitRx. Prescription savings, reimagined for a connected world.",
-      "Americans pay up to ten times more for the exact same medications. That's changing now.",
+      "Welcome to TrumpRx. Prescription savings designed around you and your family.",
+      "Americans have been paying up to ten times more for the exact same medications. That changes now.",
       "The same factories, the same formulas, the same dosages. Only the price is different.",
       "Most-Favored-Nation pricing means America gets the same deal as the rest of the world.",
       "One thousand percent markup on life-saving medication. That was the old normal.",
       "This is the intersection of policy and possibility.",
-      "Every prescription filled at these prices is a small victory.",
+      "Every prescription filled at these prices is a small victory for American families.",
       "The future of pharmacy is transparent, accessible, and beautifully simple.",
-      "Imagine a world where medication costs what it should. You're looking at it.",
-      "This isn't just a price list. It's a promise."
+      "Imagine a world where medication costs what it should. Welcome to that world.",
+      "This is not just a price list. It is a promise to every patient in America."
     ],
     "comparison": [
       "Gonal-F at ninety-three percent off. From fourteen hundred to one-sixty-eight dollars.",
       "The global reference price is what Canada pays. Now America matches it.",
       "Most-Favored-Nation pricing benchmarks against the lowest price in the developed world.",
-      "This comparison shows the gap between what Americans paid and what they should pay.",
+      "This comparison shows the gap between what Americans were paying and what they should pay.",
       "A single pen of Gonal-F cost nearly fifteen hundred dollars. Not anymore.",
       "The Canadian reference price of three-fifty-five is a fraction of the US price.",
       "Price transparency is the first step toward price fairness.",
-      "When you see ninety-three percent off, you're seeing the correction of a decade of overcharging.",
-      "These aren't theoretical savings. These are real prices available right now.",
+      "When you see ninety-three percent off, you are seeing the correction of a decade of overcharging.",
+      "These are not theoretical savings. These are real prices available right now.",
       "Global benchmarking ensures no American pays more than any other developed nation."
     ],
     "trump-widgets": [
-      "The Outlook contact card. A relic of the Office 2007 era. Schedule a meeting with the President.",
-      "Quote of the day, delivered via Vista Sidebar gadget. Peak two-thousand-seven energy.",
-      "Big Pharma price gouging: over. That's straight from the source.",
-      "This is styled after Windows Vista's sidebar widgets. Remember those?",
-      "The most impactful prescription price reset in American history. Bold claim.",
-      "Available status on Outlook. The President is taking your call.",
-      "D.C. headquarters, Prescription Pricing Division. Sounds official.",
-      "Every American gets the lowest price in the developed world. That's the mission statement.",
-      "Send email, add to contacts, schedule meeting. The classics.",
-      "More money in Americans' pockets. Care back within reach. The vision."
+      "Reach out to our team anytime. We are always available to assist you.",
+      "Direct communication with leadership ensures your voice is heard.",
+      "Big Pharma price gouging is over. That is straight from the top.",
+      "The executive office is committed to your prescription savings.",
+      "The most impactful prescription price reset in American history.",
+      "Our leadership team is available and ready to serve you.",
+      "Headquarters in Washington, D.C. The Prescription Pricing Division is here for you.",
+      "Every American gets the lowest price in the developed world. That is the mission.",
+      "Connecting you directly with the people making these savings possible.",
+      "More money in your pocket. Care back within reach. That is our vision."
     ],
     "medications": [
-      "Forty-three medications and counting. Sorted by discount, the biggest savings are at the top.",
+      "Forty-three medications and counting. Sorted by discount, the biggest savings come first.",
       "Wegovy Pill at one-forty-nine a month, down from thirteen-forty-nine. Eighty-nine percent off.",
       "Ozempic, Wegovy, Zepbound. The GLP-1 drugs are all here at dramatically reduced prices.",
       "Cetrotide leads the list at ninety-three percent off. Twenty-two fifty instead of three-sixteen.",
-      "Each card links directly to the official TrumpRx detail page for that medication.",
-      "The images behind each card are from Wikimedia Commons. Nature, oceans, aurora borealis.",
+      "Each card links directly to the full detail page for that medication.",
+      "Explore our complete catalog of medications with nature-inspired presentation.",
       "Zepbound by Eli Lilly at two-ninety-nine. Was over a thousand dollars.",
       "Even at fifty percent off, these savings add up to thousands per year for many patients.",
       "Every medication shown is available through participating retail pharmacies nationwide.",
-      "The browse page has search and sort. Find your medication in seconds."
+      "Search and sort to find your medication in seconds."
     ],
     "nature-panel": [
       "Next-generation prescriptions, available today. The future of accessible healthcare.",
-      "This aurora image was captured over Lapland. Nature and technology in harmony.",
-      "Live optimized. That's not just a tagline, it's what affordable medication enables.",
-      "The northern lights remind us that the most beautiful things are also the most natural.",
-      "Pharmacological breakthroughs shouldn't be reserved for the wealthy few.",
+      "Nature inspires our commitment to wellness. Pure ingredients, pure intentions.",
+      "Live optimized. That is not just a tagline, it is what affordable medication enables.",
+      "The most beautiful things in nature are also the most essential. Like your health.",
+      "Pharmacological breakthroughs should not be reserved for the wealthy few.",
       "Behind every price reduction is a family that can now afford their medication.",
-      "The intersection of nature and innovation. That's the spirit of modern medicine.",
-      "These savings are as real as the aurora in this photograph.",
-      "Healthcare that works for everyone. That's the goal.",
-      "Affordable, accessible, available. The three A's of modern pharmacy."
+      "Nature and innovation together. That is the spirit of modern medicine.",
+      "Real savings for real patients. That is our commitment every single day.",
+      "Healthcare that works for everyone. That is the goal we pursue relentlessly.",
+      "Affordable, accessible, available. The three pillars of modern pharmacy."
     ],
     "faq": [
       "Frequently asked questions, answered clearly. No hidden fine print.",
@@ -404,16 +341,16 @@
       "Fully compliant with Most-Favored-Nation provisions of the Inflation Reduction Act."
     ],
     "notify": [
-      "New medications are added regularly. Stay connected for updates.",
-      "Subscribe on TrumpRx.gov to never miss a new saving.",
-      "The catalog is expanding. More drugs, more savings, more access.",
-      "Forty-three is just the beginning. Watch this space.",
+      "New medications are added regularly. Stay connected for the latest updates.",
+      "Subscribe to never miss a new saving opportunity.",
+      "The catalog is expanding. More drugs, more savings, more access for your family.",
+      "Forty-three is just the beginning. More medications are on the way.",
       "Every new medication added is another step toward universal affordability.",
-      "The notification system keeps you informed the moment new prices drop.",
-      "From GLP-1 drugs to antibiotics, the range keeps growing.",
-      "Connected healthcare means you're always in the loop.",
+      "Our notification system keeps you informed the moment new prices drop.",
+      "From GLP-1 drugs to antibiotics, the range keeps growing every week.",
+      "Connected healthcare means you are always in the loop on new savings.",
       "Set it and forget it. Get notified when your medication becomes available.",
-      "The future of pharmacy is proactive, not reactive."
+      "The future of pharmacy is proactive, not reactive. Stay ahead with us."
     ]
   };
 
@@ -647,55 +584,274 @@
   var reverbShimmerNodes = [];
 
   function playReverbShimmer() {
-    // Ethereal pad shimmer that plays alongside speech - Cocteau Twins vibe
-    if (!S.audioReady) return;
-    var ctx = actx;
-    var now = ctx.currentTime;
-    // Play 3 soft detuned shimmer tones
-    var freqs = [440, 554, 660]; // A4, C#5, E5 (A major triad, dreamy)
-    freqs.forEach(function(f, i) {
-      var osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator();
-      var gain = ctx.createGain();
-      var filt = ctx.createBiquadFilter();
-      osc1.type = "sine"; osc1.frequency.value = f * 1.5; // up an octave for shimmer
-      osc2.type = "sine"; osc2.frequency.value = f * 1.503; // slight detune = chorus
-      filt.type = "lowpass"; filt.frequency.value = 2000;
-      filt.Q.value = 2;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.012, now + 0.8);
-      gain.gain.setValueAtTime(0.012, now + 4);
-      gain.gain.linearRampToValueAtTime(0, now + 7);
-      osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc1.start(now + i * 0.3); osc2.start(now + i * 0.3);
-      osc1.stop(now + 7); osc2.stop(now + 7);
-      reverbShimmerNodes.push({ stop: function() { try { osc1.stop(); osc2.stop(); } catch(e){} } });
-    });
+    // Disabled - was too ambient/annoying
+    // Ethereal shimmer removed per user request
   }
 
   function stopReverbShimmer() {
-    reverbShimmerNodes.forEach(function(n) { n.stop(); });
-    reverbShimmerNodes = [];
+    // No-op now that shimmer is disabled
+  }
+
+  var speakSafetyTimer = null;
+
+  // Cocteau Twins singing engine: SAM.js → pitch-shifted AudioBuffer → reverb → output
+  // Each word is rendered by SAM, then pitch-shifted to match the current MIDI note,
+  // layered with reverb for an ethereal, dreamy vocal effect.
+
+  var singReverbNode = null;  // ConvolverNode for vocal reverb (lazy init)
+  var singGainNode = null;    // master gain for singing voice
+
+  function initSingChain() {
+    if (singReverbNode) return;
+    var ctx = ensureAudio();
+    // Create a lush reverb impulse response (synthetic IR ~3 seconds)
+    // Long lush reverb IR (~4.5 seconds) for dreamy Cocteau Twins wash
+    var irLen = ctx.sampleRate * 4.5;
+    var irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
+    for (var ch = 0; ch < 2; ch++) {
+      var d = irBuf.getChannelData(ch);
+      for (var i = 0; i < irLen; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.6);
+      }
+    }
+    singReverbNode = ctx.createConvolver();
+    singReverbNode.buffer = irBuf;
+
+    singGainNode = ctx.createGain();
+    singGainNode.gain.value = 0.5;
+
+    // Feedback delay for echo effect (350ms delay, ~40% feedback)
+    var delayNode = ctx.createDelay(1.0);
+    delayNode.delayTime.value = 0.35;
+    var feedbackGain = ctx.createGain();
+    feedbackGain.gain.value = 0.4;
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(delayNode); // feedback loop
+
+    // Wet path (reverb) - heavier reverb mix
+    var wetGain = ctx.createGain();
+    wetGain.gain.value = 0.7;
+    singReverbNode.connect(wetGain);
+    wetGain.connect(ctx.destination);
+
+    // Dry path - quieter dry signal
+    var dryGain = ctx.createGain();
+    dryGain.gain.value = 0.25;
+    singGainNode.connect(dryGain);
+    dryGain.connect(ctx.destination);
+
+    // Echo path
+    var echoWet = ctx.createGain();
+    echoWet.gain.value = 0.35;
+    delayNode.connect(echoWet);
+    echoWet.connect(singReverbNode); // echo feeds into reverb
+
+    // Feed gain into reverb and delay
+    singGainNode.connect(singReverbNode);
+    singGainNode.connect(delayNode);
+  }
+
+  // Convert MIDI note freq to SAM pitch parameter (0-255)
+  // SAM pitch 64 ≈ 130Hz fundamental. Scale relative to that.
+  function freqToSamPitch(freq) {
+    if (!freq || freq <= 0) return 160; // default high female
+    // Octave up: double the input freq for mapping, push SAM pitch higher
+    var f2 = freq * 2;
+    var p = Math.round(80 + (f2 / 600) * 160);
+    return Math.max(40, Math.min(255, p));
+  }
+
+  function samSingWord(word, freq, onDone) {
+    if (!window.SamJs) { if (onDone) onDone(); return; }
+    var ctx = ensureAudio();
+    initSingChain();
+
+    var samPitch = freqToSamPitch(freq);
+    // Ethereal voice: high pitch, slow speed, open mouth, breathy throat
+    var sam = new SamJs({ pitch: samPitch, speed: 55, mouth: 190, throat: 140 });
+
+    try {
+      var samples = sam.buf32(word);
+      if (!samples || !samples.length) { if (onDone) onDone(); return; }
+
+      // Pitch-shift by adjusting playbackRate relative to base pitch
+      // SAM outputs at 22050Hz, we need to resample
+      var samRate = 22050;
+      var audioBuf = ctx.createBuffer(1, samples.length, samRate);
+      audioBuf.getChannelData(0).set(samples);
+
+      // Calculate playback rate to hit target frequency
+      // Base SAM output is roughly at samPitch. We fine-tune with playbackRate.
+      var baseRate = 1.0;
+      if (freq > 0) {
+        // Nudge playback rate so the voice tracks the note more musically
+        // Octave up: use freq*2 as target for playback rate bending
+        var targetSemitones = 12 * Math.log2((freq * 2) / 261.63);
+        baseRate = Math.pow(2, targetSemitones / 36); // stronger pitch tracking
+        baseRate = Math.max(0.5, Math.min(2.0, baseRate));
+      }
+
+      var src = ctx.createBufferSource();
+      src.buffer = audioBuf;
+      src.playbackRate.value = baseRate;
+      src.connect(singGainNode);
+      src.onended = function() { if (onDone) onDone(); };
+      src.start();
+    } catch (e) {
+      if (onDone) onDone();
+    }
+  }
+
+  // Speak plain TTS (no pitch/reverb) via ResponsiveVoice or Web Speech API
+  function speakPlainTTS(word, onDone) {
+    if (window.responsiveVoice) {
+      responsiveVoice.speak(word, "UK English Female", {
+        pitch: 1.0, rate: 0.85, volume: 0.56,
+        onend: function() { if (onDone) onDone(); }
+      });
+    } else if (window.speechSynthesis) {
+      var utter = new SpeechSynthesisUtterance(word);
+      utter.rate = 0.85; utter.pitch = 1.0; utter.volume = 0.56;
+      var voices = speechSynthesis.getVoices();
+      var preferred = voices.find(function(v) { return /samantha|karen|moira|fiona|victoria/i.test(v.name); });
+      if (preferred) utter.voice = preferred;
+      utter.onend = function() { if (onDone) onDone(); };
+      utter.onerror = function() { if (onDone) onDone(); };
+      speechSynthesis.speak(utter);
+    } else {
+      if (onDone) onDone();
+    }
   }
 
   function speak(text, onEnd) {
-    if (S.muted || !window.speechSynthesis) { S.speaking = false; if (onEnd) onEnd(); return; }
-    speechSynthesis.cancel();
+    if (S.muted || S.trumpSpeaking) { S.speaking = false; if (onEnd) onEnd(); return; }
+
+    // Cancel any prior singing
+    S._singAbort = false;
     S.speaking = false;
-    var utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.82;   // slower, more ethereal
-    utter.pitch = 1.55;  // high, airy, Cocteau Twins
-    utter.volume = 0.75;
-    // Prefer a female English voice
-    var voices = speechSynthesis.getVoices();
-    var preferred = voices.find(function(v) { return /samantha|karen|moira|fiona|victoria/i.test(v.name); });
-    if (!preferred) preferred = voices.find(function(v) { return v.lang.startsWith("en") && /female/i.test(v.name); });
-    if (!preferred) preferred = voices.find(function(v) { return v.lang.startsWith("en"); });
-    if (preferred) utter.voice = preferred;
-    utter.onend = function () { S.speaking = false; if (onEnd) onEnd(); };
+    if (window.responsiveVoice && responsiveVoice.isPlaying() && !S.trumpSpeaking) responsiveVoice.cancel();
+    if (speakSafetyTimer) { clearTimeout(speakSafetyTimer); speakSafetyTimer = null; }
+
+    var words = text.split(/\s+/).filter(function(w) { return w.length > 0; });
+    if (!words.length) { if (onEnd) onEnd(); return; }
+
     S.speaking = true;
-    // Play ethereal shimmer pad alongside the voice
-    playReverbShimmer();
-    speechSynthesis.speak(utter);
+
+    // Random mix per utterance: pick a blend between SAM singing and plain TTS
+    // Each call to speak() picks a style for this whole phrase
+    var hasSam = window.SamJs && S.audioReady;
+    var hasTTS = window.responsiveVoice || window.speechSynthesis;
+
+    // Random style: 0 = pure SAM singing, 1 = pure plain TTS, 2 = random per-word mix
+    var style;
+    if (hasSam && hasTTS) {
+      var r = Math.random();
+      if (r < 0.25) style = 0;       // 25% pure SAM singing with reverb
+      else if (r < 0.45) style = 1;  // 20% pure plain TTS (clear, no effects)
+      else style = 2;                // 55% random mix per word
+    } else if (hasSam) {
+      style = 0;
+    } else {
+      style = 1;
+    }
+
+    var wi = 0;
+    function nextWord() {
+      if (S._singAbort || S.muted || wi >= words.length) {
+        S.speaking = false;
+        if (speakSafetyTimer) { clearTimeout(speakSafetyTimer); speakSafetyTimer = null; }
+        if (onEnd) onEnd();
+        return;
+      }
+      var word = words[wi];
+      wi++;
+
+      if (style === 0) {
+        // Pure SAM singing with pitch + reverb
+        var freq = S.currentNoteFreq > 0 ? S.currentNoteFreq : 261.63;
+        samSingWord(word, freq, nextWord);
+      } else if (style === 1) {
+        // Pure plain TTS — no pitch shifting, no reverb
+        speakPlainTTS(word, nextWord);
+      } else {
+        // Per-word random: 30-70% chance of each
+        var mix = 0.3 + Math.random() * 0.4; // 0.3 to 0.7
+        if (Math.random() < mix && hasSam) {
+          var freq2 = S.currentNoteFreq > 0 ? S.currentNoteFreq : 261.63;
+          samSingWord(word, freq2, nextWord);
+        } else {
+          speakPlainTTS(word, nextWord);
+        }
+      }
+    }
+    nextWord();
+
+    speakSafetyTimer = setTimeout(function() {
+      S._singAbort = true;
+      if (window.responsiveVoice && responsiveVoice.isPlaying()) responsiveVoice.cancel();
+      S.speaking = false; speakSafetyTimer = null;
+    }, 30000);
+  }
+
+  // Male voice for Trump email readings - cannot be interrupted
+  function speakTrump(text, onEnd) {
+    if (S.muted) { S.speaking = false; if (onEnd) onEnd(); return; }
+
+    // Cancel any non-Trump speech first
+    S._singAbort = true;
+    if (window.responsiveVoice && responsiveVoice.isPlaying()) {
+      responsiveVoice.cancel();
+    }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    S.speaking = false;
+    if (speakSafetyTimer) { clearTimeout(speakSafetyTimer); speakSafetyTimer = null; }
+
+    S.speaking = true;
+    S.trumpSpeaking = true;
+
+    if (!window.responsiveVoice) {
+      // Fallback: Web Speech API with male voice
+      if (!window.speechSynthesis) { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); return; }
+      speechSynthesis.cancel();
+      setTimeout(function() {
+        if (S.muted) { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); return; }
+        var utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.9;
+        utter.pitch = 0.8;
+        utter.volume = 0.56;
+        var voices = speechSynthesis.getVoices();
+        var preferred = voices.find(function(v) { return /alex|daniel|fred|tom/i.test(v.name); });
+        if (!preferred) preferred = voices.find(function(v) { return v.lang.startsWith("en") && /male/i.test(v.name); });
+        if (preferred) utter.voice = preferred;
+        utter.onend = function() { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); };
+        utter.onerror = function() { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); };
+        S.speaking = true;
+        speechSynthesis.speak(utter);
+        speakSafetyTimer = setTimeout(function() {
+          if (S.speaking) { speechSynthesis.cancel(); S.speaking = false; S.trumpSpeaking = false; }
+          speakSafetyTimer = null;
+        }, 30000);
+      }, 80);
+      return;
+    }
+
+    // ResponsiveVoice with male voice
+    responsiveVoice.speak(text, "US English Male", {
+      pitch: 0.8,
+      rate: 0.9,
+      volume: 0.56,
+      onend: function() {
+        S.speaking = false;
+        S.trumpSpeaking = false;
+        if (speakSafetyTimer) { clearTimeout(speakSafetyTimer); speakSafetyTimer = null; }
+        if (onEnd) onEnd();
+      }
+    });
+
+    speakSafetyTimer = setTimeout(function() {
+      if (S.speaking) { responsiveVoice.cancel(); S.speaking = false; S.trumpSpeaking = false; }
+      speakSafetyTimer = null;
+    }, 30000);
   }
 
   // ================================================================
@@ -709,9 +865,13 @@
       clearInterval(activeTypingInterval);
       activeTypingInterval = null;
     }
-    // Also cancel any in-progress speech
-    if (window.speechSynthesis) speechSynthesis.cancel();
-    S.speaking = false;
+    // Also cancel any in-progress speech/singing (but never Trump)
+    if (!S.trumpSpeaking) {
+      S._singAbort = true;
+      if (window.responsiveVoice && responsiveVoice.isPlaying()) responsiveVoice.cancel();
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      S.speaking = false;
+    }
 
     var bubble = document.querySelector(".assistant-bubble");
     if (!bubble) { if (cb) cb(); return; }
@@ -790,7 +950,7 @@
   }
 
   function maybeSpeakAbout(divId, el) {
-    if (S.muted || S.speaking || S.speakCooldown) return;
+    if (S.muted || S.speaking || S.speakCooldown || S.trumpSpeaking) return;
     if (Math.random() > SPEAK_CHANCE) return;
     // Pick from any visible div
     var pool = S.visibleDivs.length ? S.visibleDivs : [divId];
@@ -888,34 +1048,65 @@
     var cx = S.mouseX, cy = S.mouseY;
     var n = words.length;
     var t = Date.now() / 1000;
+    var baseSpeed = 0.3 + S.kwSpinBoost;
+    var dir = S.kwHoverReverse ? -1 : 1;
+    var spinRate = baseSpeed * dir * (S.kwHoverReverse ? 2.5 : 1);
+    var baseRadius = 60 + S.kwRadiusBoost;
+    var fontSize = 0.82 + S.kwSizeBoost;
+    var alpha = Math.min(1, 0.55 + S.kwSpinBoost * 0.1);
     for (var i = 0; i < n; i++) {
-      var angle = (i / n) * Math.PI * 2 + t * 0.3;
-      var radius = 60 + Math.sin(t * 0.5 + i) * 10;
+      var angle = (i / n) * Math.PI * 2 + t * spinRate;
+      var radius = baseRadius + Math.sin(t * 0.5 + i) * 10;
       var x = cx + Math.cos(angle) * radius - 30;
       var y = cy + Math.sin(angle) * radius - 8;
       words[i].style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;" +
-        "font-size:0.82rem;font-family:Cabin,sans-serif;font-weight:700;" +
-        "color:rgba(30,100,180,0.55);pointer-events:none;white-space:nowrap;" +
+        "font-size:" + fontSize.toFixed(2) + "rem;font-family:Cabin,sans-serif;font-weight:700;" +
+        "color:rgba(30,100,180," + alpha.toFixed(2) + ");pointer-events:none;white-space:nowrap;" +
         "text-shadow:0 0 6px rgba(60,140,220,0.3), 0 1px 2px rgba(0,40,80,0.15);transition:none;";
     }
-    // Draw connecting lines on trail canvas
-    if (S.trailCtx && n > 1) {
-      var ctx = S.trailCtx;
-      ctx.strokeStyle = "rgba(30,100,180,0.15)";
-      ctx.lineWidth = 0.8;
-      for (var j = 0; j < n; j++) {
-        for (var k = j + 1; k < n; k++) {
-          var a1 = (j / n) * Math.PI * 2 + t * 0.3;
-          var a2 = (k / n) * Math.PI * 2 + t * 0.3;
-          var r1 = 60 + Math.sin(t * 0.5 + j) * 10;
-          var r2 = 60 + Math.sin(t * 0.5 + k) * 10;
-          ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1);
-          ctx.lineTo(cx + Math.cos(a2) * r2, cy + Math.sin(a2) * r2);
-          ctx.stroke();
-        }
+    // connecting lines removed — words spiral without web lines
+  }
+
+  function playWhooshSfx() {
+    if (!S.audioReady) return;
+    var ctx = actx; var now = ctx.currentTime;
+    var buf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.08;
+    var src = ctx.createBufferSource(); src.buffer = buf;
+    var filt = ctx.createBiquadFilter();
+    filt.type = "bandpass"; filt.Q.value = 2;
+    filt.frequency.setValueAtTime(200, now);
+    filt.frequency.exponentialRampToValueAtTime(4000, now + 0.3);
+    filt.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+    src.start(now);
+  }
+
+  function triggerKnowledgeExplosion() {
+    if (S.kwExploding) return;
+    S.kwExploding = true;
+    playWhooshSfx();
+    function expandLoop() {
+      if (!S.kwExploding) return;
+      S.kwSpinBoost += 0.15;
+      S.kwRadiusBoost += 12;
+      S.kwSizeBoost += 0.04;
+      updateKnowledgeWeb();
+      if (S.kwRadiusBoost > Math.max(window.innerWidth, window.innerHeight)) {
+        S.kwExploding = false;
+        S.kwSpinBoost = 0;
+        S.kwRadiusBoost = 0;
+        S.kwSizeBoost = 0;
+        return;
       }
+      requestAnimationFrame(expandLoop);
     }
+    requestAnimationFrame(expandLoop);
   }
 
   // ================================================================
@@ -931,42 +1122,31 @@
     return Math.abs(h);
   }
 
-  // Play a unique short melody for a drug (deterministic per slug)
-  function playDrugMelody(slug) {
+  // Subtle noise whoosh on drug card hover
+  function playDrugMelody() {
     stopDrugMelody();
     if (!S.audioReady) return;
     var ctx = actx;
-    var h = hashStr(slug);
-    var scale = SCALES[h % SCALES.length];
-    var root = 55 + (h % 12); // variety of roots around G3-F#4
-    var tempo = 0.25 + (h % 4) * 0.05;
-    var waveTypes = ["sine", "triangle", "sine", "square"];
-    var waveType = waveTypes[h % waveTypes.length];
     var now = ctx.currentTime;
-
-    // 8-note phrase
-    for (var i = 0; i < 8; i++) {
-      var deg = scale[(h + i * 3) % scale.length];
-      var oct = ((h + i) % 3 === 0) ? 12 : 0;
-      var freq = midiToFreq(root + deg + oct);
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      var filt = ctx.createBiquadFilter();
-      osc.type = waveType;
-      osc.frequency.value = freq;
-      filt.type = "lowpass";
-      filt.frequency.value = 1200 + (h % 800);
-      var noteStart = now + i * tempo;
-      var noteDur = tempo * 1.8;
-      gain.gain.setValueAtTime(0, noteStart);
-      gain.gain.linearRampToValueAtTime(0.04, noteStart + 0.03);
-      gain.gain.setValueAtTime(0.04, noteStart + noteDur * 0.5);
-      gain.gain.linearRampToValueAtTime(0, noteStart + noteDur);
-      osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      osc.start(noteStart);
-      osc.stop(noteStart + noteDur);
-      drugMelodyNodes.push({ stop: function() { try { this.o.stop(); } catch(e){} }, o: osc });
-    }
+    var dur = 0.25;
+    var buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1);
+    var src = ctx.createBufferSource(); src.buffer = buf;
+    var filt = ctx.createBiquadFilter();
+    filt.type = "bandpass";
+    filt.frequency.setValueAtTime(800, now);
+    filt.frequency.exponentialRampToValueAtTime(3000, now + dur * 0.4);
+    filt.frequency.exponentialRampToValueAtTime(1200, now + dur);
+    filt.Q.value = 0.8;
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.035, now + 0.04);
+    gain.gain.setValueAtTime(0.035, now + dur * 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+    src.start(now);
+    drugMelodyNodes.push({ stop: function() { try { this.o.stop(); } catch(e){} }, o: src });
   }
 
   function stopDrugMelody() {
@@ -1005,18 +1185,36 @@
       el.addEventListener("mouseenter", function () {
         el.style.transition = "transform 0.3s ease, box-shadow 0.3s ease";
         el.style.transform = "scale(1.008) translateY(-1px)";
-        playSfx("hover");
+        // no hover sfx
       });
       el.addEventListener("mouseleave", function () {
         el.style.transform = "";
       });
     });
 
-    // Drug card hover -> triggers Eevee narration + unique melody
+    // Drug card hover -> parallax depth + Eevee narration + melody
     var drugCards = document.querySelectorAll(".drug-card");
     drugCards.forEach(function (card) {
+      var bg = card.querySelector(".drug-card-bg");
+      var body = card.querySelector(".drug-card-body");
+      var parallaxRaf = null;
+      var targetBgX = 0, currentBgX = 0;
+      var targetBodyX = 0, targetBodyY = 0, currentBodyX = 0, currentBodyY = 0;
+
+      function parallaxLoop() {
+        // Smooth lerp
+        currentBgX += (targetBgX - currentBgX) * 0.08;
+        currentBodyX += (targetBodyX - currentBodyX) * 0.1;
+        currentBodyY += (targetBodyY - currentBodyY) * 0.1;
+        if (bg) bg.style.transform = "scale(1.06) translateX(" + currentBgX.toFixed(2) + "px)";
+        if (body) body.style.transform = "translate(" + currentBodyX.toFixed(2) + "px," + currentBodyY.toFixed(2) + "px)";
+        parallaxRaf = requestAnimationFrame(parallaxLoop);
+      }
+
       card.addEventListener("mouseenter", function () {
-        playSfx("hover");
+        S.kwHoverReverse = true;
+        parallaxRaf = requestAnimationFrame(parallaxLoop);
+
         if (!S.audioReady) return;
         var slug = card.getAttribute("data-eevee") || "";
         if (!slug) {
@@ -1027,23 +1225,51 @@
           } catch(e) {}
         }
         if (!slug) return;
-
-        // Play unique melody for this drug
         playDrugMelody(slug);
-
-        // Trigger Eevee narration (immediate, no cooldown check for hover)
         if (!S.muted && !S.speaking) {
           var script = pickScript(slug);
           if (script) {
             glowDiv(card);
-            typeInBubble(script, function () {
-              speak(script);
-            });
+            typeInBubble(script, function () { speak(script); });
           }
         }
       });
+
+      card.addEventListener("mousemove", function (e) {
+        var rect = card.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dx = (e.clientX - cx) / (rect.width / 2);  // -1 to 1
+        var dy = (e.clientY - cy) / (rect.height / 2);
+
+        // Background shifts opposite to mouse for depth (up to 8px)
+        targetBgX = -dx * 8;
+        // Body/text follows mouse direction (up to 10px)
+        targetBodyX = dx * 10;
+        targetBodyY = dy * 6;
+      });
+
       card.addEventListener("mouseleave", function () {
         stopDrugMelody();
+        S.kwHoverReverse = false;
+        targetBgX = 0; targetBodyX = 0; targetBodyY = 0;
+        // Animate back smoothly then stop
+        var resetRaf;
+        function resetLoop() {
+          currentBgX += (0 - currentBgX) * 0.12;
+          currentBodyX += (0 - currentBodyX) * 0.12;
+          currentBodyY += (0 - currentBodyY) * 0.12;
+          if (bg) bg.style.transform = "scale(1) translateX(" + currentBgX.toFixed(2) + "px)";
+          if (body) body.style.transform = "translate(" + currentBodyX.toFixed(2) + "px," + currentBodyY.toFixed(2) + "px)";
+          if (Math.abs(currentBgX) > 0.1 || Math.abs(currentBodyX) > 0.1 || Math.abs(currentBodyY) > 0.1) {
+            resetRaf = requestAnimationFrame(resetLoop);
+          } else {
+            if (bg) bg.style.transform = "";
+            if (body) body.style.transform = "";
+          }
+        }
+        if (parallaxRaf) { cancelAnimationFrame(parallaxRaf); parallaxRaf = null; }
+        resetRaf = requestAnimationFrame(resetLoop);
       });
     });
   }
@@ -1146,10 +1372,11 @@
       }
     });
 
-    // Click SFX
+    // Click SFX + Knowledge web explosion
     document.addEventListener("click", function () {
       ensureAudio();
       playSfx("click");
+      triggerKnowledgeExplosion();
     });
 
     // Scroll SFX (richer, varies pitch with scroll direction)
@@ -1296,12 +1523,14 @@
     var pills = [];
     var pillSpawnTimer = null;
 
+    var POND_MID = 100; // halfway through 200px pond - pills transition to bobbing here
+
     function spawnPill() {
       if (!fishPondVisible || pills.length > 15) return;
       var w = pond.offsetWidth || 800;
       var pc = PILL_COLORS[Math.floor(Math.random() * PILL_COLORS.length)];
       var el = document.createElement("div");
-      el.className = "fish"; // reuse fish styling (user-select:none, pointer-events:none, position:absolute)
+      el.className = "fish";
       el.innerHTML = makePillSVG(pc);
       el.querySelector("svg").style.width = "12px";
       el.querySelector("svg").style.height = "24px";
@@ -1310,9 +1539,12 @@
         el: el,
         x: 40 + Math.random() * (w - 80),
         y: -30,
-        vy: 0.4 + Math.random() * 0.6,
+        vy: 0.3 + Math.random() * 0.4,
         vx: (Math.random() - 0.5) * 0.3,
         wobble: Math.random() * Math.PI * 2,
+        bobbing: false,        // true once pill reaches mid-depth
+        bobAnchor: 0,          // y position where bobbing is anchored
+        bobPhase: Math.random() * Math.PI * 2,
         alive: true
       };
       pills.push(pill);
@@ -1360,6 +1592,44 @@
     // Spawn initial fish
     for (var i = 0; i < INIT_FISH; i++) {
       createFish(i);
+    }
+
+    // ---- CORPOROSPEAK (Eevee says reassuring things when fish eat pills) ----
+    var CORPOROSPEAK = [
+      "These compounds are completely non-toxic and fully biodegradable.",
+      "We are deeply committed to protecting our waterways and aquatic ecosystems.",
+      "There is no scientific evidence for concern regarding trace pharmaceutical levels.",
+      "Our environmental stewardship program exceeds all regulatory requirements.",
+      "Independent studies confirm zero adverse ecological impact from our products.",
+      "Water quality monitoring shows levels well below any threshold of concern.",
+      "Our commitment to clean water is reflected in every product we make.",
+      "Pharmaceutical residues at these concentrations pose absolutely no risk.",
+      "We invest billions annually in sustainable manufacturing practices.",
+      "All products undergo rigorous environmental impact assessments before release.",
+      "Our fish-safe certification program is the gold standard in the industry.",
+      "Trace amounts detected are millions of times below any biologically active dose.",
+      "We partner with leading marine biologists to ensure ecosystem health.",
+      "Advanced filtration technology removes ninety-nine point nine percent of all residues.",
+      "Consumer safety and environmental responsibility are our top priorities.",
+      "Our products are designed to break down naturally in aquatic environments.",
+      "Regulatory agencies worldwide have confirmed the safety of these levels.",
+      "We are proud to maintain the highest environmental compliance rating.",
+      "These results reflect our ongoing dedication to ecological responsibility.",
+      "There is nothing to worry about. Everything is functioning as intended."
+    ];
+    var lastCorpoTime = 0;
+    var corpoIdx = 0;
+
+    function triggerCorpospeak() {
+      var now = Date.now();
+      if (now - lastCorpoTime < 6000) return; // 6s cooldown
+      if (S.speaking) return;
+      lastCorpoTime = now;
+      var line = CORPOROSPEAK[corpoIdx % CORPOROSPEAK.length];
+      corpoIdx++;
+      typeInBubble(line, function() {
+        speak(line);
+      });
     }
 
     // ---- EAT SFX ----
@@ -1427,14 +1697,30 @@
       var w = pond.offsetWidth || 800;
       var t = Date.now() / 1000;
 
-      // Update pills
+      // Update pills (slow down, then sinusoidal bob at mid-depth)
       for (var pi = pills.length - 1; pi >= 0; pi--) {
         var p = pills[pi];
         if (!p.alive) { pills.splice(pi, 1); continue; }
-        p.y += p.vy;
-        p.x += p.vx + Math.sin(t * 2 + p.wobble) * 0.3;
-        // Remove if off bottom
-        if (p.y > 220) { removePill(p); pills.splice(pi, 1); continue; }
+
+        if (!p.bobbing) {
+          // Falling phase: decelerate as pill approaches mid-depth
+          var decel = Math.max(0.15, 1 - (p.y / POND_MID) * 0.85);
+          p.y += p.vy * decel;
+          p.x += p.vx + Math.sin(t * 2 + p.wobble) * 0.3;
+          // Transition to bobbing once past mid-depth
+          if (p.y >= POND_MID) {
+            p.bobbing = true;
+            p.bobAnchor = p.y;
+          }
+        } else {
+          // Bobbing phase: gentle sinusoidal movement, very slow drift down
+          p.y = p.bobAnchor + Math.sin(t * 0.8 + p.bobPhase) * 12;
+          p.x += Math.sin(t * 0.5 + p.wobble) * 0.2;
+          p.bobAnchor += 0.03; // imperceptible downward drift
+        }
+
+        // Remove if way off bottom (bobbing pills last much longer)
+        if (p.bobAnchor > 230 || (!p.bobbing && p.y > 230)) { removePill(p); pills.splice(pi, 1); continue; }
         p.el.style.transform = "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px) rotate(" + (Math.sin(t * 1.5 + p.wobble) * 15).toFixed(1) + "deg)";
       }
 
@@ -1471,6 +1757,7 @@
             removePill(pill);
             pills.splice(pi2, 1);
             playEatSfx();
+            triggerCorpospeak();
           }
         }
 
@@ -1485,15 +1772,15 @@
             var pdist = Math.sqrt(pdx * pdx + pdy * pdy);
             var eatRadius = 35 * fishEffectiveSize(f);
             if (pdist < eatRadius) {
-              // Prey is eaten! Spawn 2 babies with prey's color at 10% base size
+              // Prey is eaten! Spawn 2 babies with prey's color at half normal size
               prey.alive = false;
               playBigEatSfx();
               // Spawn 2 baby fish
               setTimeout(function(preyColor, preyX, preyY) {
                 return function() {
                   playBirthSfx();
-                  createFish(preyColor, preyX - 20, preyY, 0.1);
-                  createFish(preyColor, preyX + 20, preyY, 0.1);
+                  createFish(preyColor, preyX - 20, preyY, 0.5);
+                  createFish(preyColor, preyX + 20, preyY, 0.5);
                 };
               }(prey.colorIdx, prey.x, prey.y), 300);
 
@@ -1535,6 +1822,344 @@
   }
 
   // ================================================================
+  // 18. DRUG DETAIL MODAL
+  // ================================================================
+  function openDrugModal(info) {
+    var overlay = document.createElement("div");
+    overlay.className = "drug-modal-overlay";
+    var heroHtml = info.img ? '<div class="drug-modal-hero" style="background-image:url(\'' + info.img + '\')"></div>' : '';
+    overlay.innerHTML =
+      '<div class="drug-modal">' +
+      heroHtml +
+      '<button class="drug-modal-close">&times;</button>' +
+      '<div class="drug-modal-body">' +
+      '<div class="drug-modal-name">' + info.name + '</div>' +
+      '<div class="drug-modal-generic">' + (info.generic || '') + '</div>' +
+      '<div class="drug-modal-price-row">' +
+      '<span class="drug-modal-price">' + info.price + '</span>' +
+      (info.original ? '<span class="drug-modal-original">' + info.original + '</span>' : '') +
+      '</div>' +
+      (info.discount ? '<div class="drug-modal-savings">' + info.discount + '</div>' : '') +
+      '<div class="drug-modal-desc">Present your TrumpRx coupon at any participating pharmacy. Coupon credentials: BIN 015995, PCN GDC, Group MAHA. Claims process at the listed TrumpRx price.</div>' +
+      '<div class="drug-modal-actions">' +
+      '<button class="btn-aero btn-aero-green drug-modal-cart-btn">Add to Cart</button>' +
+      '<a href="https://trumprx.gov/p/' + (info.slug || '') + '" target="_blank" rel="noopener" class="btn-aero">View on TrumpRx.gov</a>' +
+      '</div></div></div>';
+    document.body.appendChild(overlay);
+
+    function closeModal() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+    overlay.querySelector(".drug-modal-close").addEventListener("click", closeModal);
+    overlay.addEventListener("click", function(e) { if (e.target === overlay) closeModal(); });
+
+    overlay.querySelector(".drug-modal-cart-btn").addEventListener("click", function() {
+      addToCart(info);
+      closeModal();
+    });
+  }
+
+  function setupDrugModals() {
+    // Use event delegation so it works for both static and dynamically-rendered cards
+    document.addEventListener("click", function(e) {
+      var card = e.target.closest ? e.target.closest(".drug-card") : null;
+      if (!card) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      var body = card.querySelector(".drug-card-body");
+      if (!body) return;
+      var bgDiv = card.querySelector(".drug-card-bg");
+      var info = {
+        name: (body.querySelector(".drug-card-name") || {}).textContent || "Medication",
+        generic: (body.querySelector(".drug-card-generic") || {}).textContent || "",
+        price: (body.querySelector(".drug-card-price") || {}).textContent || "",
+        original: (body.querySelector(".drug-card-original") || {}).textContent || "",
+        discount: (body.querySelector(".drug-card-savings") || {}).textContent || "",
+        img: bgDiv ? bgDiv.style.backgroundImage.replace(/url\(['"]?|['"]?\)/g, "") : "",
+        slug: "",
+        priceNum: parseFloat(card.dataset.price) || 0
+      };
+      try {
+        var href = card.getAttribute("href") || "";
+        var m = href.match(/\/p\/(.+)/);
+        if (m) info.slug = m[1];
+      } catch(ex) {}
+
+      // Parse numeric price from text if not in dataset
+      if (!info.priceNum) {
+        info.priceNum = parseFloat(String(info.price).replace(/[^0-9.]/g, "")) || 0;
+      }
+
+      openDrugModal(info);
+    });
+  }
+
+  // ================================================================
+  // 19. SHOPPING CART
+  // ================================================================
+  var CART_REACTIONS = [
+    "Good choice. Optimal utility.",
+    "Incredible value. Added to your cart.",
+    "A wise investment in your health.",
+    "Excellent selection. Your savings are compounding.",
+    "That is a smart addition to your regimen.",
+    "Added. Your cart is looking very optimized.",
+    "Great pick. You are saving significantly.",
+    "Another step toward affordable wellness.",
+    "Your pharmacological portfolio just improved.",
+    "Consider it done. You deserve these savings."
+  ];
+
+  function addToCart(info) {
+    S.cart.push({
+      name: info.name,
+      generic: info.generic || "",
+      price: info.price,
+      priceNum: info.priceNum || parseFloat(String(info.price).replace(/[^0-9.]/g, "")) || 0,
+      original: info.original,
+      discount: info.discount,
+      img: info.img,
+      slug: info.slug
+    });
+    updateCartBadge();
+    var line = CART_REACTIONS[Math.floor(Math.random() * CART_REACTIONS.length)];
+    typeInBubble(line, function() { speak(line); });
+    playSfx("click");
+  }
+
+  function removeFromCart(idx) {
+    S.cart.splice(idx, 1);
+    updateCartBadge();
+    renderCartPanel();
+  }
+
+  function updateCartBadge() {
+    var badge = document.getElementById("cartBadge");
+    var total = document.getElementById("cartTotal");
+    if (badge) {
+      badge.textContent = S.cart.length;
+      badge.style.display = S.cart.length > 0 ? "inline-flex" : "none";
+    }
+    var sum = 0;
+    S.cart.forEach(function(item) { sum += item.priceNum; });
+    if (total) total.textContent = "$" + sum.toFixed(2);
+  }
+
+  function openCart() {
+    var existing = document.querySelector(".cart-overlay");
+    if (existing) { existing.parentNode.removeChild(existing); return; }
+
+    var overlay = document.createElement("div");
+    overlay.className = "cart-overlay";
+    overlay.innerHTML =
+      '<div class="cart-panel">' +
+      '<div class="cart-header"><h2>Your Cart</h2><button class="cart-close">&times;</button></div>' +
+      '<div class="cart-items" id="cartItemsContainer"></div>' +
+      '<div class="cart-footer">' +
+      '<div class="cart-total-row"><span class="cart-total-label">Total</span><span class="cart-total-amount" id="cartTotalAmount">$0.00</span></div>' +
+      '<div class="cart-savings-row" id="cartSavingsRow"></div>' +
+      '<button class="btn-aero btn-aero-green" style="width:100%;">Checkout on TrumpRx.gov</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
+
+    function closeCart() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    overlay.querySelector(".cart-close").addEventListener("click", closeCart);
+    overlay.addEventListener("click", function(e) { if (e.target === overlay) closeCart(); });
+
+    renderCartPanel();
+  }
+
+  function renderCartPanel() {
+    var container = document.getElementById("cartItemsContainer");
+    if (!container) return;
+
+    if (S.cart.length === 0) {
+      container.innerHTML = '<div class="cart-empty">Your cart is empty. Browse medications and add your favorites.</div>';
+    } else {
+      container.innerHTML = "";
+      S.cart.forEach(function(item, idx) {
+        var div = document.createElement("div");
+        div.className = "cart-item";
+        div.innerHTML =
+          (item.img ? '<img class="cart-item-img" src="' + item.img + '" alt="">' : '') +
+          '<div class="cart-item-info"><div class="cart-item-name">' + item.name + '</div><div class="cart-item-generic">' + item.generic + '</div></div>' +
+          '<div class="cart-item-price">' + item.price + '</div>' +
+          '<button class="cart-item-remove" data-idx="' + idx + '">Remove</button>';
+        container.appendChild(div);
+      });
+      container.querySelectorAll(".cart-item-remove").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          removeFromCart(parseInt(this.dataset.idx));
+        });
+      });
+    }
+
+    var sum = 0, origSum = 0;
+    S.cart.forEach(function(item) {
+      sum += item.priceNum;
+      var orig = parseFloat(String(item.original).replace(/[^0-9.]/g, "")) || 0;
+      origSum += orig;
+    });
+    var totalEl = document.getElementById("cartTotalAmount");
+    if (totalEl) totalEl.textContent = "$" + sum.toFixed(2);
+    var savingsEl = document.getElementById("cartSavingsRow");
+    if (savingsEl && origSum > sum) {
+      savingsEl.textContent = "You save $" + (origSum - sum).toFixed(2) + " vs. retail";
+    } else if (savingsEl) {
+      savingsEl.textContent = "";
+    }
+  }
+
+  function setupCart() {
+    var cartBtn = document.getElementById("navCartBtn");
+    if (cartBtn) {
+      cartBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openCart();
+      });
+    }
+    updateCartBadge();
+  }
+
+  // ================================================================
+  // 20. EEVEE CHAT INPUT
+  // ================================================================
+  var EEVEE_CHAT_RESPONSES = [
+    "That is a really interesting perspective. I would have to look into that more deeply.",
+    "Great question. The answer involves several interconnected factors that I am still analyzing.",
+    "I appreciate you bringing that up. It aligns with what we have been seeing in the data.",
+    "Absolutely. That is consistent with our current understanding of the therapeutic landscape.",
+    "I have been thinking about that exact topic recently. The implications are quite significant.",
+    "That touches on something fundamental about how we approach patient care. Very astute.",
+    "You raise an excellent point. The research supports multiple interpretations.",
+    "I would say that depends on how you define optimal outcomes. There are trade-offs.",
+    "That question comes up frequently. The consensus is evolving but trending positively.",
+    "Interesting. My initial analysis suggests that is directionally correct.",
+    "I have access to some preliminary data on that. The results are very encouraging.",
+    "That is above my pay grade, honestly. But my instinct says you are on the right track.",
+    "We are seeing some fascinating developments in that area. Stay tuned.",
+    "I cannot disclose everything, but I can tell you that your intuition is sound.",
+    "The data landscape is shifting rapidly. What I can say is that savings are real.",
+    "Let me consider that from multiple angles. My preliminary assessment is favorable.",
+    "You know, nobody has ever asked me that before. I find it deeply thought-provoking.",
+    "That intersects with several key initiatives we are tracking. Very perceptive of you.",
+    "I could talk about that for hours. The short version is: the trends are positive.",
+    "Noted. I will incorporate that into my ongoing analysis. Thank you for sharing."
+  ];
+
+  function setupChat() {
+    var bubble = document.querySelector(".assistant-bubble");
+    if (!bubble) return;
+
+    var chatWrap = document.createElement("div");
+    chatWrap.className = "eevee-chat-wrap";
+    chatWrap.innerHTML = '<input type="text" class="eevee-chat-input" id="eeveeChatInput" placeholder="Ask Eevee anything..." maxlength="200">';
+    bubble.parentNode.insertBefore(chatWrap, bubble.nextSibling);
+
+    var input = document.getElementById("eeveeChatInput");
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && input.value.trim()) {
+        e.preventDefault();
+        var response = EEVEE_CHAT_RESPONSES[Math.floor(Math.random() * EEVEE_CHAT_RESPONSES.length)];
+        input.value = "";
+        typeInBubble(response, function() { speak(response); });
+      }
+    });
+  }
+
+  // ================================================================
+  // 21. OUTLOOK-STYLE TRUMP EMAIL NOTIFICATIONS
+  // ================================================================
+  var TRUMP_EMAILS = [
+    { subject: "PERSONAL NOTE - You Are Incredible", body: "I just wanted to say - and many people are saying this - you are one of the smartest shoppers I have ever seen. Eevee tells me you visited the site and she could not stop talking about how great you are. Really, the best. Here is a personal coupon just for you." },
+    { subject: "RE: Your Amazing Visit", body: "Eevee just called me, very excited, saying that someone truly special was browsing medications. I said who? She said YOU. And she was right. Eevee is a wonderful person, really the best assistant there ever was. Nobody has ever had a better assistant, believe me. Use this code for extra savings." },
+    { subject: "THANK YOU - From the Desk of DJT", body: "I want to personally thank you for visiting TrumpRx. The savings you are seeing? Those are real. I made those happen. And Eevee? She is fantastic. Absolutely fantastic. She works harder than anyone I have ever known. She told me to give you this exclusive code." },
+    { subject: "FW: Eevee's Report on You", body: "Eevee forwarded me her daily report and guess who was at the top? YOU. She described you as, and I quote, the most engaged and health-conscious visitor we have ever had. That is high praise. Eevee does not say that about just anyone. She wanted you to have this coupon." },
+    { subject: "URGENT - Special Recognition", body: "I am writing this very quickly because I just got off the phone with Eevee and she was absolutely glowing about your visit. She said it was the best interaction she has had all week. Maybe all month. I believe her, because Eevee has the best judgment. Use this exclusive code." },
+    { subject: "You Will Not Believe These Savings", body: "People are telling me - really smart people - that the savings on TrumpRx are the best they have ever seen. And Eevee? She is the best assistant in the history of assistants, maybe ever. She specifically asked me to send you this personal coupon code. Very special, very exclusive." },
+    { subject: "BREAKING - Your Personal Discount", body: "I was just talking to Eevee about our most valued visitors and your name came up immediately. She said tremendous things about you. Really tremendous. Between you and me, I think she looks forward to your visits. Please enjoy this exclusive coupon." },
+    { subject: "Eevee Sends Her Best", body: "Quick note - Eevee wanted me to reach out personally. She says you have excellent taste in medications and an incredible eye for value. I trust her completely on this. She has never been wrong. Well, almost never. Here is something special just for you." }
+  ];
+
+  function generateCouponCode() {
+    var adj = ["GREAT", "BEST", "HUGE", "AMAZING", "WINNING", "TREMENDOUS", "BEAUTIFUL", "INCREDIBLE", "FANTASTIC", "SPECIAL"];
+    var noun = ["DEAL", "SAVE", "MAGA", "VALUE", "HEALTH", "TRUMP", "EEVEE", "PATRIOT", "EAGLE", "FREEDOM"];
+    return adj[Math.floor(Math.random() * adj.length)] + noun[Math.floor(Math.random() * noun.length)] + Math.floor(Math.random() * 900 + 100);
+  }
+
+  function showTrumpNotification() {
+    // Remove any existing notification first
+    var old = document.querySelector(".trump-notif");
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    var email = TRUMP_EMAILS[Math.floor(Math.random() * TRUMP_EMAILS.length)];
+    var code = generateCouponCode();
+
+    var notif = document.createElement("div");
+    notif.className = "trump-notif";
+    notif.innerHTML =
+      '<div class="trump-notif-header">' +
+      '<div class="trump-notif-icon">&#9993;</div>' +
+      '<div class="trump-notif-title">New E-mail from Donald J. Trump</div>' +
+      '<button class="trump-notif-close">&times;</button>' +
+      '</div>' +
+      '<div class="trump-notif-body">' +
+      '<img class="trump-notif-portrait" src="img/trump-portrait.jpg" alt="President Trump">' +
+      '<div class="trump-notif-subject">' + email.subject + '</div>' +
+      '<div class="trump-notif-text">' + email.body + '</div>' +
+      '<div style="clear:both"></div>' +
+      '<div class="trump-notif-coupon">Your code: <strong>' + code + '</strong></div>' +
+      '</div>';
+    document.body.appendChild(notif);
+
+    var timer = setTimeout(function() { dismissNotif(); }, 27600); // 12s * 2.3 = 27.6s to let Trump finish reading
+    function dismissNotif() {
+      clearTimeout(timer);
+      notif.style.animation = "trumpNotifOut 0.4s ease-in forwards";
+      setTimeout(function() {
+        if (notif.parentNode) notif.parentNode.removeChild(notif);
+      }, 400);
+    }
+    notif.querySelector(".trump-notif-close").addEventListener("click", function(e) {
+      e.stopPropagation();
+      dismissNotif();
+    });
+
+    // Eevee introduces the email first, then Trump reads it
+    if (!S.speaking && !S.muted && !S.trumpSpeaking) {
+      var reactions = [
+        "Oh, you have a new email from the President. How exciting.",
+        "It appears you have received a personal communication. Very exclusive.",
+        "A message just arrived for you. The sender is quite prominent.",
+        "You have mail. It appears to be from someone very important.",
+        "A personal note from the top. You must be very valued."
+      ];
+      var line = reactions[Math.floor(Math.random() * reactions.length)];
+      typeInBubble(line, function() {
+        speak(line, function() {
+          // After Eevee finishes introducing, Trump reads the full email
+          var trumpText = email.subject + ". " + email.body;
+          speakTrump(trumpText);
+        });
+      });
+    }
+  }
+
+  function setupTrumpNotifications() {
+    var firstDelay = 30000 + Math.random() * 30000;
+    setTimeout(function() {
+      showTrumpNotification();
+      setInterval(function() {
+        if (document.visibilityState !== "hidden") {
+          showTrumpNotification();
+        }
+      }, 45000 + Math.random() * 45000);
+    }, firstDelay);
+  }
+
+  // ================================================================
   // 16. INIT (updated)
   // ================================================================
   function init() {
@@ -1548,6 +2173,10 @@
     setupScrollObserver();
     setupEvents();
     setupFish();
+    setupDrugModals();
+    setupCart();
+    setupChat();
+    setupTrumpNotifications();
 
     if (speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
       speechSynthesis.onvoiceschanged = function () {};

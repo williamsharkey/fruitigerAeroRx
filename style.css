@@ -335,6 +335,9 @@ a { color: inherit; }
   position: absolute;
   inset: 0;
   z-index: 0;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .hero-photo img {
   width: 100%;
@@ -408,8 +411,7 @@ a { color: inherit; }
 .section {
   position: relative;
   z-index: 2;
-  padding: 60px 30px;
-  max-width: 1100px;
+  padding: 60px 18em;
   margin: 0 auto;
 }
 .section-header {
@@ -491,7 +493,7 @@ a { color: inherit; }
 }
 .drug-card {
   padding: 0;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.35s cubic-bezier(.25,.46,.45,.94), box-shadow 0.35s ease;
   display: flex;
   flex-direction: column;
   text-decoration: none;
@@ -501,36 +503,66 @@ a { color: inherit; }
   min-height: 300px;
 }
 .drug-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px) scale(1.01);
   box-shadow:
-    0 10px 35px var(--aero-glass-shadow),
+    0 12px 40px var(--aero-glass-shadow),
+    0 0 0 1px rgba(255,255,255,0.15),
     inset 0 1px 0 var(--aero-highlight);
 }
 .drug-card-bg {
   position: absolute;
-  inset: 0;
+  inset: -10px;
   background-size: cover;
   background-position: center;
   z-index: 0;
-  transition: transform 0.4s ease;
+  transition: transform 0.6s cubic-bezier(.25,.46,.45,.94);
+  will-change: transform;
 }
 .drug-card:hover .drug-card-bg {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 /* Glass overlay so text is readable */
 .drug-card-body {
   position: relative;
   z-index: 1;
   margin-top: auto;
-  padding: 18px;
+  /* 10% wider on sides and bottom so parallax shifts don't expose image edges */
+  margin-left: -10%;
+  margin-right: -10%;
+  margin-bottom: -10%;
+  padding: 20px calc(10% + 18px) calc(10% + 18px);
   background: linear-gradient(180deg,
     rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.55) 15%,
-    rgba(255,255,255,0.78) 40%,
-    rgba(255,255,255,0.88) 100%
+    rgba(255,255,255,0.35) 8%,
+    rgba(255,255,255,0.65) 25%,
+    rgba(255,255,255,0.82) 55%,
+    rgba(255,255,255,0.92) 100%
   );
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(10px) saturate(1.3);
+  -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  border-top: 1px solid rgba(255,255,255,0.4);
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+/* Glass shine accent */
+.drug-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.06) 40%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.drug-card:hover::after {
+  opacity: 1;
 }
 .drug-card-name {
   font-family: 'Cabin', 'Segoe UI', sans-serif;
@@ -728,7 +760,11 @@ a { color: inherit; }
 }
 
 /* ---------- RESPONSIVE ---------- */
+@media (max-width: 1200px) {
+  .section { padding: 60px 6em; }
+}
 @media (max-width: 768px) {
+  body { }
   .hero h1 { font-size: 1.9rem; }
   .hero-card { padding: 30px 25px; }
   .hero { min-height: 70vh; padding-top: 80px; }
@@ -1165,4 +1201,423 @@ a { color: inherit; }
   width: 60px;
   height: 30px;
   filter: drop-shadow(0 2px 4px rgba(0,40,80,0.2));
+}
+
+/* ---------- DRUG DETAIL MODAL ---------- */
+.drug-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,20,40,0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 0.25s ease-out;
+}
+@keyframes modalFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.drug-modal {
+  background: linear-gradient(180deg, #fff 0%, #f4f8fc 100%);
+  border-radius: 16px;
+  max-width: 520px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.3);
+  animation: modalSlideUp 0.3s ease-out;
+  position: relative;
+}
+@keyframes modalSlideUp {
+  0% { opacity: 0; transform: translateY(30px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.drug-modal-hero {
+  height: 220px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+}
+.drug-modal-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,30,60,0.5));
+  border-radius: 16px 16px 0 0;
+}
+.drug-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: background 0.15s;
+}
+.drug-modal-close:hover { background: rgba(0,0,0,0.65); }
+.drug-modal-body { padding: 28px; }
+.drug-modal-name {
+  font-family: 'Cabin', 'Segoe UI', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #0d3a5c;
+  margin-bottom: 2px;
+}
+.drug-modal-generic {
+  font-size: 0.92rem;
+  color: var(--aero-text-light);
+  margin-bottom: 18px;
+}
+.drug-modal-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.drug-modal-price {
+  font-family: 'Open Sans', 'Segoe UI', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--aero-green-dark);
+}
+.drug-modal-original {
+  font-size: 1.1rem;
+  color: #b44;
+  text-decoration: line-through;
+}
+.drug-modal-savings {
+  display: inline-block;
+  padding: 5px 14px;
+  margin: 10px 0 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #8ed85c, #5a9e2a);
+  border-radius: 4px;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset;
+}
+.drug-modal-desc {
+  font-size: 0.9rem;
+  color: var(--aero-text-light);
+  line-height: 1.7;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: rgba(0,100,200,0.04);
+  border-radius: 8px;
+  border-left: 3px solid var(--aero-sky-top);
+}
+.drug-modal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- SHOPPING CART ---------- */
+.nav-cart-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.2);
+  transition: background 0.15s;
+}
+.nav-cart-btn:hover {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.25);
+}
+.cart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(180deg, #ff6b6b, #d44);
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(200,0,0,0.3);
+}
+.cart-total {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  margin-left: 2px;
+}
+.cart-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,20,40,0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10001;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  animation: modalFadeIn 0.2s ease-out;
+}
+.cart-panel {
+  width: 380px;
+  max-width: 95%;
+  height: 100vh;
+  background: linear-gradient(180deg, #fff 0%, #f4f8fc 100%);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  animation: cartSlideIn 0.3s ease-out;
+}
+@keyframes cartSlideIn {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+.cart-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0,60,120,0.1);
+}
+.cart-header h2 {
+  font-family: 'Cabin', 'Segoe UI', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0d3a5c;
+}
+.cart-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: linear-gradient(180deg, #f0f4fa, #d8e2ee);
+  color: #4a6a8a;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,60,120,0.06);
+}
+.cart-item-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.cart-item-info { flex: 1; min-width: 0; }
+.cart-item-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0d3a5c;
+}
+.cart-item-generic {
+  font-size: 0.72rem;
+  color: var(--aero-text-light);
+}
+.cart-item-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--aero-green-dark);
+  white-space: nowrap;
+}
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: #b44;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-weight: 600;
+}
+.cart-item-remove:hover { text-decoration: underline; }
+.cart-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--aero-text-light);
+  font-size: 0.9rem;
+}
+.cart-footer {
+  padding: 20px 24px;
+  border-top: 1px solid rgba(0,60,120,0.1);
+  background: rgba(255,255,255,0.8);
+}
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.cart-total-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0d3a5c;
+}
+.cart-total-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--aero-green-dark);
+}
+.cart-savings-row {
+  font-size: 0.82rem;
+  color: var(--aero-green-dark);
+  font-weight: 600;
+  text-align: right;
+  margin-bottom: 12px;
+}
+@media (max-width: 480px) {
+  .cart-panel { width: 100%; }
+  .drug-modal { width: 96%; }
+  .drug-modal-hero { height: 160px; }
+}
+
+/* ---------- EEVEE CHAT INPUT ---------- */
+.eevee-chat-wrap {
+  pointer-events: auto;
+  width: 260px;
+}
+.eevee-chat-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 0.78rem;
+  border: 1px solid #d4c478;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffef0, #fdf8d0);
+  color: #4a3d00;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.eevee-chat-input::placeholder { color: #a09060; }
+.eevee-chat-input:focus {
+  border-color: #b8a040;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 2px rgba(180,160,64,0.2);
+}
+
+/* ---------- TRUMP EMAIL NOTIFICATION ---------- */
+.trump-notif {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 340px;
+  z-index: 10002;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.35);
+  border: 1px solid #8db2e3;
+  animation: trumpNotifIn 0.4s ease-out;
+}
+@keyframes trumpNotifIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes trumpNotifOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(20px); }
+}
+.trump-notif-header {
+  background: linear-gradient(180deg, #c6d9f1 0%, #a5c0e6 40%, #8aafdc 100%);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #7a9cc7;
+}
+.trump-notif-icon { font-size: 14px; color: #1a3660; }
+.trump-notif-title {
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1a3660;
+}
+.trump-notif-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #4a6a8a;
+  cursor: pointer;
+  padding: 0 4px;
+  font-family: inherit;
+}
+.trump-notif-body {
+  background: linear-gradient(180deg, #f8fafd, #eef3fa);
+  padding: 12px 14px;
+}
+.trump-notif-portrait {
+  float: right;
+  width: 72px;
+  height: auto;
+  margin: 0 0 8px 10px;
+  border: 2px solid #c8d4e0;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0,30,60,0.15);
+}
+.trump-notif-subject {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1a3660;
+  margin-bottom: 6px;
+}
+.trump-notif-text {
+  font-size: 0.75rem;
+  color: #3a5a7a;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.trump-notif-coupon {
+  font-size: 0.8rem;
+  color: #1a3660;
+  background: rgba(180,220,255,0.3);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px dashed #8db2e3;
+}
+.trump-notif-coupon strong {
+  color: #c44;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+@media (max-width: 768px) {
+  .trump-notif { width: 280px; left: 10px; bottom: 10px; }
+  .eevee-chat-wrap { width: 200px; }
 }
