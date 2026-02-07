@@ -36,7 +36,11 @@
   // ================================================================
   var actx = null;
   function ensureAudio() {
-    if (actx) return actx;
+    if (actx) {
+      // Resume if suspended (browser autoplay policy)
+      if (actx.state === "suspended") actx.resume();
+      return actx;
+    }
     actx = new (window.AudioContext || window.webkitAudioContext)();
     S.audioReady = true;
     return actx;
@@ -130,53 +134,154 @@
 
   function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-  function createPad(ctx, freq, dur, vol) {
-    var osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator();
-    var gain = ctx.createGain(), filt = ctx.createBiquadFilter();
-    osc1.type = "sine"; osc1.frequency.value = freq;
-    osc2.type = "triangle"; osc2.frequency.value = freq * 1.002; // slight detune
-    filt.type = "lowpass"; filt.frequency.value = freq * 3;
-    var now = ctx.currentTime;
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(vol, now + dur * 0.3);
-    gain.gain.setValueAtTime(vol, now + dur * 0.6);
-    gain.gain.linearRampToValueAtTime(0, now + dur);
-    osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-    osc1.start(now); osc2.start(now);
-    osc1.stop(now + dur); osc2.stop(now + dur);
-    return { stop: function () { try { osc1.stop(); osc2.stop(); } catch (e) {} } };
+  var TOTAL_TRACKS = 40;
+  // Track types: "pad", "arp", "chip", "bass", "crystal", "pluck", "choir", "perc"
+  var TRACK_TYPES = ["pad","arp","chip","pad","crystal","arp","bass","pluck",
+                     "chip","pad","arp","crystal","choir","bass","pad","arp",
+                     "pluck","chip","crystal","pad","arp","chip","bass","pad",
+                     "crystal","pluck","arp","choir","pad","chip","arp","pad",
+                     "bass","crystal","pluck","chip","arp","pad","choir","arp"];
+
+  function playNote(ctx, freq, dur, vol, type, startTime) {
+    var now = startTime || ctx.currentTime;
+    var osc1 = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var filt = ctx.createBiquadFilter();
+    filt.type = "lowpass";
+
+    if (type === "pad") {
+      var osc2 = ctx.createOscillator();
+      osc1.type = "sine"; osc1.frequency.value = freq;
+      osc2.type = "triangle"; osc2.frequency.value = freq * 1.002;
+      filt.frequency.value = freq * 3;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(vol, now + dur * 0.3);
+      gain.gain.setValueAtTime(vol, now + dur * 0.6);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc1.start(now); osc2.start(now);
+      osc1.stop(now + dur); osc2.stop(now + dur);
+    }
+    else if (type === "arp" || type === "pluck") {
+      osc1.type = "triangle";
+      osc1.frequency.value = freq;
+      filt.frequency.setValueAtTime(freq * 6, now);
+      filt.frequency.exponentialRampToValueAtTime(freq * 1.5, now + dur * 0.6);
+      filt.Q.value = 4;
+      gain.gain.setValueAtTime(vol * 1.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc1.start(now); osc1.stop(now + dur);
+    }
+    else if (type === "chip") {
+      osc1.type = "square";
+      osc1.frequency.value = freq;
+      filt.frequency.value = 2000;
+      gain.gain.setValueAtTime(vol * 0.6, now);
+      gain.gain.setValueAtTime(vol * 0.6, now + dur * 0.7);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc1.start(now); osc1.stop(now + dur);
+    }
+    else if (type === "bass") {
+      osc1.type = "sawtooth";
+      osc1.frequency.value = freq / 2; // octave down
+      filt.frequency.value = 400;
+      filt.Q.value = 6;
+      gain.gain.setValueAtTime(vol * 1.5, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc1.start(now); osc1.stop(now + dur);
+    }
+    else if (type === "crystal") {
+      // High sparkly sine with fast decay
+      osc1.type = "sine";
+      osc1.frequency.value = freq * 2;
+      filt.frequency.value = 8000;
+      gain.gain.setValueAtTime(vol * 0.8, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + dur * 1.2);
+      osc1.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc1.start(now); osc1.stop(now + dur * 1.2);
+    }
+    else if (type === "choir") {
+      // 3 detuned sines for choir effect
+      [0, 0.003, -0.004].forEach(function(detune) {
+        var o = ctx.createOscillator();
+        o.type = "sine"; o.frequency.value = freq * (1 + detune);
+        var g = ctx.createGain();
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(vol * 0.5, now + dur * 0.4);
+        g.gain.setValueAtTime(vol * 0.5, now + dur * 0.7);
+        g.gain.linearRampToValueAtTime(0, now + dur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now); o.stop(now + dur);
+      });
+    }
+    else { // perc - noise burst
+      var buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1);
+      var src = ctx.createBufferSource(); src.buffer = buf;
+      filt.frequency.value = freq; filt.Q.value = 10; filt.type = "bandpass";
+      gain.gain.setValueAtTime(vol * 0.5, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      src.start(now);
+    }
   }
 
   function generateTrack(trackIdx) {
     if (!S.audioReady) return;
     var ctx = actx;
+    var type = TRACK_TYPES[trackIdx % TOTAL_TRACKS];
     var scaleIdx = trackIdx % SCALES.length;
     var scale = SCALES[scaleIdx];
     var root = ROOTS[trackIdx % ROOTS.length];
-    var tempo = 0.8 + (trackIdx % 5) * 0.15; // seconds per note
 
-    // Play a sequence of 16 pad notes
+    // Tempo varies by type
+    var tempo;
+    if (type === "arp" || type === "chip" || type === "crystal") {
+      tempo = 0.12 + (trackIdx % 4) * 0.04; // fast arpeggios
+    } else if (type === "bass") {
+      tempo = 0.4 + (trackIdx % 3) * 0.1; // slower bass
+    } else {
+      tempo = 0.6 + (trackIdx % 5) * 0.15; // pads/choir
+    }
+
+    // Note count varies by type
+    var noteCount = (type === "arp" || type === "chip" || type === "crystal") ? 32 : 16;
+
     var notes = [];
-    for (var i = 0; i < 16; i++) {
-      var deg = scale[Math.floor(Math.random() * scale.length)];
-      var octave = Math.floor(Math.random() * 2) * 12;
+    for (var i = 0; i < noteCount; i++) {
+      var deg, octave;
+      if (type === "arp") {
+        // Ascending/descending pattern
+        deg = scale[i % scale.length];
+        octave = Math.floor(i / scale.length) % 2 === 0 ? 0 : 12;
+      } else if (type === "bass") {
+        deg = scale[Math.floor(Math.random() * 3)]; // stick to lower degrees
+        octave = 0;
+      } else {
+        deg = scale[Math.floor(Math.random() * scale.length)];
+        octave = Math.floor(Math.random() * 2) * 12;
+      }
       notes.push(root + deg + octave);
     }
 
-    var time = ctx.currentTime + 0.1;
     notes.forEach(function (midi, idx) {
       var freq = midiToFreq(midi);
-      var dur = tempo * (1.5 + Math.random());
+      var dur = (type === "arp" || type === "chip" || type === "crystal")
+        ? tempo * (0.8 + Math.random() * 0.4)
+        : tempo * (1.5 + Math.random());
       setTimeout(function () {
-        if (S.musicPlaying) createPad(ctx, freq, dur, 0.03);
+        if (S.musicPlaying) playNote(ctx, freq, dur, 0.03, type);
       }, idx * tempo * 1000);
     });
 
-    // Schedule next track
     var totalDur = notes.length * tempo * 1000;
     if (S.musicPlaying) {
       setTimeout(function () {
-        S.currentTrack = (S.currentTrack + 1) % 20;
+        S.currentTrack = (S.currentTrack + 1) % TOTAL_TRACKS;
         generateTrack(S.currentTrack);
       }, totalDur);
     }
@@ -193,18 +298,21 @@
     updateMusicBtn();
   }
   function nextTrack() {
-    S.currentTrack = (S.currentTrack + 1) % 20;
+    S.currentTrack = (S.currentTrack + 1) % TOTAL_TRACKS;
     if (S.musicPlaying) { stopMusic(); setTimeout(startMusic, 100); }
+    else { updateMusicBtn(); }
   }
   function prevTrack() {
-    S.currentTrack = (S.currentTrack + 19) % 20;
+    S.currentTrack = (S.currentTrack + TOTAL_TRACKS - 1) % TOTAL_TRACKS;
     if (S.musicPlaying) { stopMusic(); setTimeout(startMusic, 100); }
+    else { updateMusicBtn(); }
   }
   function updateMusicBtn() {
     var btn = document.getElementById("playPauseBtn");
     if (btn) btn.textContent = S.musicPlaying ? "||" : "\u25B6";
     var lbl = document.getElementById("trackLabel");
-    if (lbl) lbl.textContent = "Track " + (S.currentTrack + 1) + " / 20";
+    var typeName = TRACK_TYPES[S.currentTrack % TOTAL_TRACKS];
+    if (lbl) lbl.textContent = (S.currentTrack + 1) + "/" + TOTAL_TRACKS + " " + typeName;
   }
 
   // ================================================================
@@ -570,8 +678,9 @@
   }
 
   function speak(text, onEnd) {
-    if (S.muted || !window.speechSynthesis) { if (onEnd) onEnd(); return; }
-    window.speechSynthesis.cancel();
+    if (S.muted || !window.speechSynthesis) { S.speaking = false; if (onEnd) onEnd(); return; }
+    speechSynthesis.cancel();
+    S.speaking = false;
     var utter = new SpeechSynthesisUtterance(text);
     utter.rate = 0.82;   // slower, more ethereal
     utter.pitch = 1.55;  // high, airy, Cocteau Twins
@@ -592,7 +701,18 @@
   // ================================================================
   // 6. EEVEE BUBBLE & TYPING EFFECT
   // ================================================================
+  var activeTypingInterval = null;
+
   function typeInBubble(text, cb) {
+    // Cancel any in-progress typing to prevent garbled interleaving
+    if (activeTypingInterval) {
+      clearInterval(activeTypingInterval);
+      activeTypingInterval = null;
+    }
+    // Also cancel any in-progress speech
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    S.speaking = false;
+
     var bubble = document.querySelector(".assistant-bubble");
     if (!bubble) { if (cb) cb(); return; }
     var titleEl = bubble.querySelector(".assistant-bubble-title");
@@ -606,12 +726,13 @@
     // Typing effect
     var idx = 0;
     textEl.textContent = "";
-    var interval = setInterval(function () {
+    activeTypingInterval = setInterval(function () {
       if (idx < text.length) {
         textEl.textContent += text[idx];
         idx++;
       } else {
-        clearInterval(interval);
+        clearInterval(activeTypingInterval);
+        activeTypingInterval = null;
         if (cb) cb();
       }
     }, 30);
@@ -1065,21 +1186,21 @@
       if (S.audioReady) playSfx("goodbye");
     });
 
-    // First interaction -> startup sound + autostart music
+    // First click -> init audio, startup sound, autostart music
     var startupPlayed = false;
-    function onFirstInteraction() {
+    function onFirstClick() {
       if (startupPlayed) return;
       startupPlayed = true;
       ensureAudio();
       playSfx("startup");
-      // Autostart ambient music
+      // Autostart ambient music after chime
       setTimeout(function() { startMusic(); }, 1200);
-      // Load voices for TTS
+      // Pre-load voices for TTS
       if (speechSynthesis && speechSynthesis.getVoices) speechSynthesis.getVoices();
     }
-    document.addEventListener("click", onFirstInteraction, { once: false });
-    document.addEventListener("scroll", onFirstInteraction, { once: true });
-    document.addEventListener("mousemove", onFirstInteraction, { once: true });
+    // Must be click/touch for AudioContext policy
+    document.addEventListener("click", onFirstClick);
+    document.addEventListener("touchstart", onFirstClick, { once: true });
   }
 
   function tagSections() {
