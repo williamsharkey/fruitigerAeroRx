@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FruitRx - Find the World's Lowest Prices on Prescription Drugs</title>
-<meta name="description" content="FruitRx: A Frutiger Aero tribute. Same drug pricing data from TrumpRx.gov, rendered in the glorious aesthetic of Windows Vista and Web 2.0.">
+<meta name="description" content="FruitRx: Prescription savings, beautifully realized. All pricing data sourced from TrumpRx.gov.">
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230d8af0'/><ellipse cx='50' cy='30' rx='30' ry='18' fill='rgba(255,255,255,0.5)'/></svg>">
 </head>
@@ -298,7 +298,7 @@
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Aurora_borealis_over_Lapland_%28Unsplash%29.jpg/1280px-Aurora_borealis_over_Lapland_%28Unsplash%29.jpg"
          alt="Aurora borealis over Lapland" loading="lazy">
     <div class="nature-panel-overlay">
-      <p>Designed for tomorrow. Inspired by nature. Frutiger Aero, 2004&ndash;2013.</p>
+      <p>Tomorrow's pharmacological breakthroughs, available today. Live optimized.</p>
     </div>
   </div>
 </section>
@@ -435,73 +435,183 @@
   </div>
 </section>
 
-<!-- Office Assistant (Clippy-era helper) -->
-<div class="assistant-container">
+<!-- Remedea: medicinal fairy/goddess assistant -->
+<div class="assistant-container" id="remedeaContainer">
   <div class="assistant-bubble">
     <button class="assistant-dismiss" aria-label="Close">x</button>
     <div class="assistant-bubble-title">Welcome to FruitRx!</div>
     <div class="assistant-bubble-text">It looks like you're browsing prescription savings. Would you like help finding the best deal?</div>
   </div>
-  <div class="assistant-figure" title="Click me for tips!">
-    <svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg">
-      <!-- Abstract office helper: translucent figure with Aero glass effect -->
+  <div class="remedea-label font-cabin">Remedea</div>
+  <div class="assistant-figure" id="remedeaFigure" title="Click Remedea for guidance">
+    <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#7ec8f0" stop-opacity="0.9"/>
-          <stop offset="50%" stop-color="#4aa0e0" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="#2878c8" stop-opacity="0.9"/>
+        <!-- White dress gradient -->
+        <linearGradient id="dressGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.95"/>
+          <stop offset="40%" stop-color="#f0f4ff" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#d8e8ff" stop-opacity="0.75"/>
         </linearGradient>
-        <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#fff" stop-opacity="0.6"/>
+        <!-- Dress gloss -->
+        <linearGradient id="dressGloss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.7"/>
           <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
         </linearGradient>
-        <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#c08030"/>
-          <stop offset="100%" stop-color="#906020"/>
+        <!-- Hair: silvery-blonde, ethereal -->
+        <linearGradient id="hairGrad2" x1="0.2" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#f0e8c0"/>
+          <stop offset="40%" stop-color="#e8d898"/>
+          <stop offset="100%" stop-color="#c8b870"/>
         </linearGradient>
-        <radialGradient id="skinGrad" cx="0.5" cy="0.4" r="0.5">
-          <stop offset="0%" stop-color="#fde8d0"/>
-          <stop offset="100%" stop-color="#e8c8a8"/>
+        <!-- Skin -->
+        <radialGradient id="skinGrad2" cx="0.45" cy="0.35" r="0.55">
+          <stop offset="0%" stop-color="#fde8d4"/>
+          <stop offset="100%" stop-color="#ecc8a8"/>
         </radialGradient>
+        <!-- Wing gradient -->
+        <linearGradient id="wingGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#d0eaff" stop-opacity="0.5"/>
+          <stop offset="50%" stop-color="#a0d4f8" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#e8f4ff" stop-opacity="0.15"/>
+        </linearGradient>
+        <!-- Glow filter -->
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Soft glow for wings -->
+        <filter id="wingGlow">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Headset gradient -->
+        <linearGradient id="headsetGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e0e0e0"/>
+          <stop offset="100%" stop-color="#a0a0a0"/>
+        </linearGradient>
       </defs>
-      <!-- Legs -->
-      <rect x="28" y="95" width="10" height="28" rx="5" fill="#2878c8" opacity="0.85"/>
-      <rect x="42" y="95" width="10" height="28" rx="5" fill="#2878c8" opacity="0.85"/>
-      <!-- Shoes -->
-      <ellipse cx="33" cy="124" rx="9" ry="5" fill="#1a5090"/>
-      <ellipse cx="47" cy="124" rx="9" ry="5" fill="#1a5090"/>
-      <!-- Body / torso -->
-      <path d="M26,55 Q24,95 30,100 L50,100 Q56,95 54,55 Q52,42 40,40 Q28,42 26,55Z" fill="url(#bodyGrad)"/>
-      <!-- Glass highlight on torso -->
-      <path d="M28,50 Q30,42 40,40 Q50,42 52,50 Q50,62 40,60 Q30,62 28,50Z" fill="url(#gloss)"/>
-      <!-- Arms -->
-      <path d="M26,58 Q14,70 18,82 Q20,85 22,82 Q20,72 28,62Z" fill="url(#bodyGrad)" stroke="#2070b0" stroke-width="0.5"/>
-      <path d="M54,58 Q66,70 62,82 Q60,85 58,82 Q60,72 52,62Z" fill="url(#bodyGrad)" stroke="#2070b0" stroke-width="0.5"/>
-      <!-- Hands -->
-      <circle cx="18" cy="83" r="5" fill="url(#skinGrad)"/>
-      <circle cx="62" cy="83" r="5" fill="url(#skinGrad)"/>
-      <!-- Neck -->
-      <rect x="36" y="33" width="8" height="9" rx="4" fill="url(#skinGrad)"/>
-      <!-- Head -->
-      <ellipse cx="40" cy="24" rx="16" ry="18" fill="url(#skinGrad)"/>
-      <!-- Hair -->
-      <path d="M24,20 Q24,4 40,6 Q56,4 56,20 Q55,14 40,12 Q25,14 24,20Z" fill="url(#hairGrad)"/>
-      <!-- Eyes -->
-      <ellipse cx="34" cy="24" rx="2.5" ry="3" fill="#fff"/>
-      <ellipse cx="46" cy="24" rx="2.5" ry="3" fill="#fff"/>
-      <circle cx="34.5" cy="24.5" r="1.5" fill="#2060a0"/>
-      <circle cx="46.5" cy="24.5" r="1.5" fill="#2060a0"/>
-      <!-- Eye highlights -->
-      <circle cx="35.5" cy="23.5" r="0.6" fill="#fff"/>
-      <circle cx="47.5" cy="23.5" r="0.6" fill="#fff"/>
-      <!-- Mouth (smile) -->
-      <path d="M36,30 Q40,34 44,30" fill="none" stroke="#c08060" stroke-width="1" stroke-linecap="round"/>
-      <!-- Headset -->
-      <path d="M24,20 Q22,14 24,10" fill="none" stroke="#888" stroke-width="1.5"/>
-      <circle cx="23" cy="21" r="3" fill="#555" stroke="#888" stroke-width="1"/>
-      <!-- Name tag -->
-      <rect x="30" y="60" width="20" height="10" rx="2" fill="#fff" opacity="0.8"/>
-      <text x="40" y="68" text-anchor="middle" font-size="5" font-family="Segoe UI, sans-serif" fill="#2060a0" font-weight="700">AERO</text>
+
+      <!-- === ETHEREAL GLOW beneath feet === -->
+      <ellipse cx="60" cy="190" rx="30" ry="6" fill="#a0d4f8" opacity="0.25" filter="url(#glow)"/>
+
+      <!-- === WINGS (translucent, fairy-like) === -->
+      <!-- Left wing -->
+      <path d="M48,68 Q10,40 8,70 Q6,95 38,85Z" fill="url(#wingGrad)" stroke="#b8dcf8" stroke-width="0.5" filter="url(#wingGlow)" opacity="0.7"/>
+      <path d="M44,85 Q8,90 12,115 Q16,130 40,105Z" fill="url(#wingGrad)" stroke="#b8dcf8" stroke-width="0.5" filter="url(#wingGlow)" opacity="0.5"/>
+      <!-- Right wing -->
+      <path d="M72,68 Q110,40 112,70 Q114,95 82,85Z" fill="url(#wingGrad)" stroke="#b8dcf8" stroke-width="0.5" filter="url(#wingGlow)" opacity="0.7"/>
+      <path d="M76,85 Q112,90 108,115 Q104,130 80,105Z" fill="url(#wingGrad)" stroke="#b8dcf8" stroke-width="0.5" filter="url(#wingGlow)" opacity="0.5"/>
+
+      <!-- === FLOWING DRESS (white, goddess-like) === -->
+      <!-- Main dress body - long, flowing, no feet visible -->
+      <path d="M44,72 Q42,100 36,130 Q30,160 25,185 Q40,192 60,194 Q80,192 95,185 Q90,160 84,130 Q78,100 76,72 Q72,62 60,60 Q48,62 44,72Z"
+            fill="url(#dressGrad)" stroke="rgba(180,200,230,0.4)" stroke-width="0.5"/>
+      <!-- Dress gloss highlight -->
+      <path d="M48,68 Q50,62 60,60 Q70,62 72,68 Q70,82 60,80 Q50,82 48,68Z" fill="url(#dressGloss)"/>
+      <!-- Dress folds / draping lines -->
+      <path d="M50,90 Q48,120 40,155 Q38,170 36,180" fill="none" stroke="rgba(160,180,210,0.25)" stroke-width="0.8"/>
+      <path d="M60,85 Q60,120 58,160 Q57,175 60,194" fill="none" stroke="rgba(160,180,210,0.2)" stroke-width="0.8"/>
+      <path d="M70,90 Q72,120 80,155 Q82,170 84,180" fill="none" stroke="rgba(160,180,210,0.25)" stroke-width="0.8"/>
+      <!-- Trailing hem glow -->
+      <ellipse cx="60" cy="192" rx="34" ry="4" fill="#d8e8ff" opacity="0.3" filter="url(#glow)"/>
+
+      <!-- === ARMS (graceful, slightly extended) === -->
+      <!-- Left arm -->
+      <path d="M44,74 Q32,84 26,98 Q24,104 28,105 Q30,102 34,92 Q40,80 46,76Z" fill="url(#skinGrad2)"/>
+      <!-- Left hand (open, elegant) -->
+      <ellipse cx="27" cy="103" rx="5" ry="4" fill="url(#skinGrad2)" transform="rotate(-15,27,103)"/>
+      <!-- Right arm -->
+      <path d="M76,74 Q88,84 94,98 Q96,104 92,105 Q90,102 86,92 Q80,80 74,76Z" fill="url(#skinGrad2)"/>
+      <!-- Right hand -->
+      <ellipse cx="93" cy="103" rx="5" ry="4" fill="url(#skinGrad2)" transform="rotate(15,93,103)"/>
+
+      <!-- === NECK === -->
+      <path d="M55,52 Q55,60 54,62 L66,62 Q65,60 65,52Z" fill="url(#skinGrad2)"/>
+
+      <!-- === HEAD === -->
+      <ellipse cx="60" cy="38" rx="18" ry="20" fill="url(#skinGrad2)"/>
+
+      <!-- === HAIR (long, flowing, ethereal) === -->
+      <!-- Back hair (flows behind shoulders) -->
+      <path d="M42,30 Q38,50 32,70 Q28,85 30,100 Q32,102 34,98 Q36,80 40,62 Q42,50 44,38Z" fill="url(#hairGrad2)" opacity="0.7"/>
+      <path d="M78,30 Q82,50 88,70 Q92,85 90,100 Q88,102 86,98 Q84,80 80,62 Q78,50 76,38Z" fill="url(#hairGrad2)" opacity="0.7"/>
+      <!-- Top/front hair -->
+      <path d="M42,32 Q40,14 52,12 Q60,10 68,12 Q80,14 78,32 Q76,22 60,18 Q44,22 42,32Z" fill="url(#hairGrad2)"/>
+      <!-- Side hair strands -->
+      <path d="M42,32 Q38,40 36,52 Q34,60 36,55 Q38,45 44,34Z" fill="url(#hairGrad2)" opacity="0.8"/>
+      <path d="M78,32 Q82,40 84,52 Q86,60 84,55 Q82,45 76,34Z" fill="url(#hairGrad2)" opacity="0.8"/>
+
+      <!-- === POINTED EARS (elf-like) === -->
+      <path d="M42,36 Q34,28 32,22 Q36,28 42,32Z" fill="url(#skinGrad2)" stroke="#ecc8a8" stroke-width="0.3"/>
+      <path d="M78,36 Q86,28 88,22 Q84,28 78,32Z" fill="url(#skinGrad2)" stroke="#ecc8a8" stroke-width="0.3"/>
+
+      <!-- === EYES (large, luminous) === -->
+      <ellipse cx="53" cy="38" rx="4" ry="4.5" fill="#fff"/>
+      <ellipse cx="67" cy="38" rx="4" ry="4.5" fill="#fff"/>
+      <!-- Irises (deep blue-green, otherworldly) -->
+      <circle cx="53.5" cy="38.5" r="2.8" fill="#2898b8"/>
+      <circle cx="67.5" cy="38.5" r="2.8" fill="#2898b8"/>
+      <!-- Pupils -->
+      <circle cx="53.8" cy="38.8" r="1.3" fill="#0a3848"/>
+      <circle cx="67.8" cy="38.8" r="1.3" fill="#0a3848"/>
+      <!-- Eye highlights (multiple for that glossy Aero look) -->
+      <circle cx="55" cy="37" r="1" fill="#fff" opacity="0.9"/>
+      <circle cx="69" cy="37" r="1" fill="#fff" opacity="0.9"/>
+      <circle cx="52.5" cy="39.5" r="0.5" fill="#fff" opacity="0.5"/>
+      <circle cx="66.5" cy="39.5" r="0.5" fill="#fff" opacity="0.5"/>
+      <!-- Eyelashes (subtle) -->
+      <path d="M49,35 Q50,33 52,34" fill="none" stroke="#806040" stroke-width="0.5"/>
+      <path d="M63,34 Q65,33 67,34" fill="none" stroke="#806040" stroke-width="0.5"/>
+
+      <!-- === NOSE (delicate) === -->
+      <path d="M60,42 Q59,44 60,45 Q61,44 60,42Z" fill="none" stroke="#d4a888" stroke-width="0.5"/>
+
+      <!-- === MOUTH (gentle smile) === -->
+      <path d="M55,48 Q60,52 65,48" fill="none" stroke="#c89080" stroke-width="0.8" stroke-linecap="round"/>
+
+      <!-- === HEADSET / MIC === -->
+      <!-- Band over head -->
+      <path d="M40,28 Q38,18 42,14 Q50,8 60,8 Q70,8 78,14 Q82,18 80,28"
+            fill="none" stroke="url(#headsetGrad)" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Left earpiece (glossy orb) -->
+      <circle cx="40" cy="30" r="5" fill="#c0c0c0"/>
+      <circle cx="40" cy="30" r="4.5" fill="linear-gradient(#e8e8e8, #a0a0a0)"/>
+      <ellipse cx="40" cy="28" rx="3" ry="2" fill="rgba(255,255,255,0.4)"/>
+      <!-- Right earpiece -->
+      <circle cx="80" cy="30" r="5" fill="#c0c0c0"/>
+      <ellipse cx="80" cy="28" rx="3" ry="2" fill="rgba(255,255,255,0.4)"/>
+      <!-- Mic arm from left earpiece -->
+      <path d="M38,34 Q34,42 36,48 Q37,50 38,49" fill="none" stroke="#b0b0b0" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Mic head (small glossy capsule) -->
+      <ellipse cx="37" cy="49" rx="3" ry="2" fill="#888" stroke="#aaa" stroke-width="0.5"/>
+      <ellipse cx="37" cy="48.5" rx="2" ry="1" fill="rgba(255,255,255,0.3)"/>
+
+      <!-- === TIARA / CROWN (medicinal laurel) === -->
+      <path d="M46,16 Q48,12 52,14 Q54,10 58,13 Q60,9 62,13 Q66,10 68,14 Q72,12 74,16"
+            fill="none" stroke="#c8a840" stroke-width="1" stroke-linecap="round"/>
+      <!-- Small jewel at center -->
+      <circle cx="60" cy="11" r="2" fill="#40b8d8" filter="url(#glow)"/>
+      <circle cx="60" cy="11" r="1" fill="#80e0f8"/>
+
+      <!-- === SPARKLE PARTICLES around figure === -->
+      <circle cx="20" cy="55" r="1.5" fill="#a0d8f8" opacity="0.6" filter="url(#glow)">
+        <animate attributeName="opacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="100" cy="65" r="1" fill="#80c8e8" opacity="0.5" filter="url(#glow)">
+        <animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="15" cy="100" r="1.2" fill="#b0e0f0" opacity="0.4" filter="url(#glow)">
+        <animate attributeName="opacity" values="0.1;0.6;0.1" dur="4s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="105" cy="110" r="1" fill="#90d0e8" opacity="0.5" filter="url(#glow)">
+        <animate attributeName="opacity" values="0.4;0.1;0.4" dur="3.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="30" cy="140" r="0.8" fill="#a0d8f8" opacity="0.3" filter="url(#glow)">
+        <animate attributeName="opacity" values="0.1;0.5;0.1" dur="2.8s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="90" cy="150" r="1.3" fill="#80c8e8" opacity="0.4" filter="url(#glow)">
+        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3.2s" repeatCount="indefinite"/>
+      </circle>
     </svg>
   </div>
 </div>
@@ -509,7 +619,7 @@
 <!-- Footer -->
 <footer class="footer">
   <p>Original content from <a href="https://trumprx.gov" target="_blank" rel="noopener">TrumpRx.gov</a>, designed in D.C. by National Design Studio</p>
-  <p>Frutiger Aero reskin by FruitRx &mdash; <a href="https://trumprx.gov/privacy" target="_blank" rel="noopener">Privacy Policy</a></p>
+  <p>Redesigned by FruitRx &mdash; <a href="https://trumprx.gov/privacy" target="_blank" rel="noopener">Privacy Policy</a></p>
   <p class="footer-parody">
     PARODY &amp; SATIRE &mdash; Not affiliated with any government agency. For entertainment purposes only.
     Imagery via Wikimedia Commons.
@@ -557,15 +667,35 @@
   }
 })();
 
-// Assistant helper
+// Remedea: harmonic sinusoid float animation
+(function() {
+  var fig = document.getElementById('remedeaFigure');
+  if (!fig) return;
+  var t0 = performance.now();
+  function animate(now) {
+    var t = (now - t0) / 1000;
+    // Sum of 3 harmonics for an organic, pleasing float
+    var y = Math.sin(t * 0.8) * 6          // slow primary bob, ~3.9s period
+          + Math.sin(t * 1.4 + 0.7) * 3    // medium harmonic, ~4.5s period
+          + Math.sin(t * 2.3 + 1.5) * 1.5; // fast subtle shimmer, ~2.7s period
+    // Gentle lateral sway
+    var x = Math.sin(t * 0.5 + 0.3) * 2;
+    fig.style.transform = 'translate(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px)';
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+})();
+
+// Remedea speech bubble
 (function() {
   var msgs = [
-    { title: "Welcome to FruitRx!", text: "It looks like you're browsing prescription savings. Would you like help finding the best deal?" },
-    { title: "Did you know?", text: "TrumpRx offers Most-Favored-Nation pricing on 43 medications. That's up to 93% off retail." },
-    { title: "Need help?", text: "Click any medication card to view full pricing details on the official TrumpRx.gov site." },
-    { title: "Tip of the day", text: "You can sort medications by discount, price, or name on the Browse page." }
+    { title: "Remedea says:", text: "It looks like you're searching for prescription savings. May I help you find the best price?" },
+    { title: "Did you know?", text: "43 medications are available at Most-Favored-Nation pricing. Savings up to 93% off retail." },
+    { title: "Guidance", text: "Click any medication card to view full pricing and coupon details on the official TrumpRx.gov." },
+    { title: "Pro tip", text: "On the Browse page, you can search by name or sort by discount, price, or alphabetically." },
+    { title: "Remedea", text: "My name comes from the Latin remedium, meaning cure. I am here to guide you to wellness." }
   ];
-  var container = document.querySelector('.assistant-container');
+  var container = document.getElementById('remedeaContainer');
   if (!container) return;
   var bubble = container.querySelector('.assistant-bubble');
   var msgIdx = 0;
