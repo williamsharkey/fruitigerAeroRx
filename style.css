@@ -486,12 +486,15 @@ a { color: inherit; }
   gap: 18px;
 }
 .drug-card {
-  padding: 22px;
+  padding: 0;
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
   text-decoration: none;
   color: inherit;
+  overflow: hidden;
+  position: relative;
+  min-height: 300px;
 }
 .drug-card:hover {
   transform: translateY(-4px);
@@ -499,16 +502,42 @@ a { color: inherit; }
     0 10px 35px var(--aero-glass-shadow),
     inset 0 1px 0 var(--aero-highlight);
 }
+.drug-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  transition: transform 0.4s ease;
+}
+.drug-card:hover .drug-card-bg {
+  transform: scale(1.08);
+}
+/* Glass overlay so text is readable */
+.drug-card-body {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding: 18px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.55) 15%,
+    rgba(255,255,255,0.78) 40%,
+    rgba(255,255,255,0.88) 100%
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
 .drug-card-name {
   font-size: 1rem;
   font-weight: 700;
   color: #0d3a5c;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .drug-card-generic {
   font-size: 0.78rem;
   color: var(--aero-text-light);
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .drug-card-price {
   font-size: 1.5rem;
@@ -535,8 +564,7 @@ a { color: inherit; }
   box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset;
 }
 .drug-card-link {
-  margin-top: auto;
-  padding-top: 14px;
+  margin-top: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--aero-sky-top);

@@ -171,50 +171,52 @@
 
 <script>
 var drugs = [
-  { name: "Cetrotide", slug: "cetrotide", price: 22.50, original: 316.12, discount: 93 },
-  { name: "Wegovy Pill", slug: "wegovy-pill", generic: "Semaglutide", maker: "Novo Nordisk", price: 149, original: 1349.02, discount: 89, mo: true },
-  { name: "Bevespi", slug: "bevespi", generic: "Glycopyrrolate/Formoterol", price: 51, original: 458.05, discount: 89 },
-  { name: "Wegovy Pen", slug: "wegovy", generic: "Semaglutide", maker: "Novo Nordisk", price: 199, original: 1349.02, discount: 85, mo: true },
-  { name: "Duavee", slug: "duavee", generic: "Estrogens/Bazedoxifene", price: 30.30, original: 202.00, discount: 85 },
-  { name: "Toviaz", slug: "toviaz", generic: "Fesoterodine Fumarate", price: 43.50, original: 290, discount: 85 },
-  { name: "Gonal-F", slug: "gonal-f", generic: "Follitropin Alfa", price: 168, original: 966.04, discount: 83 },
-  { name: "Ozempic Pen", slug: "ozempic", generic: "Semaglutide", maker: "Novo Nordisk", price: 199, original: 1027.51, discount: 81, mo: true },
-  { name: "Eucrisa", slug: "eucrisa", generic: "Crisaborole", price: 158.48, original: 792.40, discount: 80 },
-  { name: "Zepbound", slug: "zepbound", generic: "Tirzepatide", maker: "Eli Lilly", price: 299, original: 1087, discount: 72, mo: true },
-  { name: "Xigduo XR", slug: "xigduo-xr", generic: "Dapagliflozin/Metformin", price: 181.59, original: 599.72, discount: 70 },
-  { name: "Ovidrel", slug: "ovidrel", generic: "Choriogonadotropin Alfa", price: 84, original: 251.84, discount: 67 },
-  { name: "Prempro", slug: "prempro", generic: "Estrogens/Medroxyprogesterone", price: 98.84, original: 254.30, discount: 61 },
-  { name: "Airsupra", slug: "airsupra", generic: "Albuterol/Budesonide", price: 201, original: 503.93, discount: 60 },
-  { name: "Abrilada", slug: "abrilada", generic: "Adalimumab-afzb", price: 207.60, original: 519, discount: 60 },
-  { name: "Genotropin", slug: "genotropin", generic: "Somatropin", price: 89.67, original: 224.14, discount: 60 },
-  { name: "Estring", slug: "estring", generic: "Estradiol", price: 249, original: 577.18, discount: 57 },
-  { name: "Protonix", slug: "protonix", generic: "Pantoprazole", price: 200.10, original: 447.28, discount: 55 },
-  { name: "Premarin", slug: "premarin", generic: "Conjugated Estrogens", price: 99, original: 217.86, discount: 55 },
-  { name: "Pristiq", slug: "pristiq", generic: "Desvenlafaxine", price: 200.10, original: 435, discount: 54 },
-  { name: "Xeljanz", slug: "xeljanz", generic: "Tofacitinib", price: 1518, original: 3204, discount: 53 },
-  { name: "Farxiga", slug: "farxiga", generic: "Dapagliflozin", price: 181.59, original: 377.82, discount: 52 },
-  { name: "Levoxyl", slug: "levoxyl", generic: "Levothyroxine", price: 35.10, original: 72, discount: 51 },
-  { name: "Cortef", slug: "cortef", generic: "Hydrocortisone", price: 45, original: 91.80, discount: 51 },
-  { name: "Colestid", slug: "colestid", generic: "Colestipol", price: 67.20, original: 135.60, discount: 50 },
-  { name: "Zarontin", slug: "zarontin", generic: "Ethosuximide", price: 71.10, original: 143.46, discount: 50 },
-  { name: "Chantix", slug: "chantix", generic: "Varenicline", price: 94.34, original: 189.74, discount: 50 },
-  { name: "Ngenla", slug: "ngenla", generic: "Somatrogon-ghla", price: 2217, original: 4434.20, discount: 50 },
-  { name: "Nicotrol", slug: "nicotrol", generic: "Nicotine", price: 271.16, original: 542.34, discount: 50 },
-  { name: "Cytomel", slug: "cytomel", generic: "Liothyronine", price: 6, original: 12, discount: 50 },
-  { name: "Diflucan", slug: "diflucan", generic: "Fluconazole", price: 14.06, original: 28.12, discount: 50 },
-  { name: "Lopid", slug: "lopid", generic: "Gemfibrozil", price: 39.60, original: 79.20, discount: 50 },
-  { name: "Medrol", slug: "medrol", generic: "Methylprednisolone", price: 3.15, original: 6.30, discount: 50 },
-  { name: "Premarin Vaginal Cream", slug: "premarin-vaginal-cream", generic: "Conjugated Estrogens", price: 236.65, original: 473.30, discount: 50 },
-  { name: "Tikosyn", slug: "tikosyn", generic: "Dofetilide", price: 336, original: 672, discount: 50 },
-  { name: "Vfend", slug: "vfend", generic: "Voriconazole", price: 306.98, original: 613.96, discount: 50 },
-  { name: "Viracept", slug: "viracept", generic: "Nelfinavir", price: 607.20, original: 1214.40, discount: 50 },
-  { name: "Zyvox", slug: "zyvox", generic: "Linezolid", price: 122.74, original: 245.48, discount: 50 },
-  { name: "Azulfidine", slug: "azulfidine", generic: "Sulfasalazine", price: 99.60, original: 199.20, discount: 50 },
-  { name: "Azulfidine En-Tabs", slug: "azulfidine-en-tabs", generic: "Sulfasalazine", price: 130.80, original: 261.60, discount: 50 },
-  { name: "Cleocin", slug: "cleocin", generic: "Clindamycin", price: 36.56, original: 73.12, discount: 50 },
-  { name: "Zavzpret", slug: "zavzpret", generic: "Zavegepant", price: 594.84, original: 1189.65, discount: 50 },
-  { name: "Insulin Lispro", slug: "insulin-lispro", generic: "Insulin Lispro", price: 25, original: null, discount: null }
+  { name: "Cetrotide", slug: "cetrotide", price: 22.50, original: 316.12, discount: 93, img: "thumb/2/27/Moon_jellyfish_at_Gota_Sagher.JPG/500px-Moon_jellyfish_at_Gota_Sagher.JPG" },
+  { name: "Wegovy Pill", slug: "wegovy-pill", generic: "Semaglutide", maker: "Novo Nordisk", price: 149, original: 1349.02, discount: 89, mo: true, img: "thumb/d/d3/Aurora_borealis_over_Eielson_Air_Force_Base%2C_Alaska.jpg/500px-Aurora_borealis_over_Eielson_Air_Force_Base%2C_Alaska.jpg" },
+  { name: "Bevespi", slug: "bevespi", generic: "Glycopyrrolate/Formoterol", price: 51, original: 458.05, discount: 89, img: "thumb/b/b7/Common_clownfish.jpg/500px-Common_clownfish.jpg" },
+  { name: "Wegovy Pen", slug: "wegovy", generic: "Semaglutide", maker: "Novo Nordisk", price: 199, original: 1349.02, discount: 85, mo: true, img: "thumb/d/de/Coral_Reef.jpg/500px-Coral_Reef.jpg" },
+  { name: "Duavee", slug: "duavee", generic: "Estrogens/Bazedoxifene", price: 30.30, original: 202.00, discount: 85, img: "thumb/e/e6/Soap_Bubble_-_foliage_background_-_iridescent_colours_-_Traquair_040801.jpg/500px-Soap_Bubble_-_foliage_background_-_iridescent_colours_-_Traquair_040801.jpg" },
+  { name: "Toviaz", slug: "toviaz", generic: "Fesoterodine Fumarate", price: 43.50, original: 290, discount: 85, img: "thumb/4/46/Purple-throated_carib_hummingbird_feeding.jpg/500px-Purple-throated_carib_hummingbird_feeding.jpg" },
+  { name: "Gonal-F", slug: "gonal-f", generic: "Follitropin Alfa", price: 168, original: 966.04, discount: 83, img: "thumb/7/70/The_Blue_Marble%2C_AS17-148-22727.jpg/500px-The_Blue_Marble%2C_AS17-148-22727.jpg" },
+  { name: "Ozempic Pen", slug: "ozempic", generic: "Semaglutide", maker: "Novo Nordisk", price: 199, original: 1027.51, discount: 81, mo: true, img: "thumb/6/61/Humpback_Whale_underwater_shot.jpg/500px-Humpback_Whale_underwater_shot.jpg" },
+  { name: "Eucrisa", slug: "eucrisa", generic: "Crisaborole", price: 158.48, original: 792.40, discount: 80, img: "thumb/f/f7/Droplet_Leaf_%28228923501%29.jpeg/500px-Droplet_Leaf_%28228923501%29.jpeg" },
+  { name: "Zepbound", slug: "zepbound", generic: "Tirzepatide", maker: "Eli Lilly", price: 299, original: 1087, discount: 72, mo: true, img: "thumb/4/4d/Eilat_Dolphin_Reef_%283%29.jpg/500px-Eilat_Dolphin_Reef_%283%29.jpg" },
+  { name: "Xigduo XR", slug: "xigduo-xr", generic: "Dapagliflozin/Metformin", price: 181.59, original: 599.72, discount: 70, img: "thumb/d/df/Faint_aurora%2C_a_meteorite_and_some_clouds_over_Tuntorp.jpg/500px-Faint_aurora%2C_a_meteorite_and_some_clouds_over_Tuntorp.jpg" },
+  { name: "Ovidrel", slug: "ovidrel", generic: "Choriogonadotropin Alfa", price: 84, original: 251.84, discount: 67, img: "thumb/a/af/Sea_fans_coral_reef_Pagan_2022.png/500px-Sea_fans_coral_reef_Pagan_2022.png" },
+  { name: "Prempro", slug: "prempro", generic: "Estrogens/Medroxyprogesterone", price: 98.84, original: 254.30, discount: 61, img: "thumb/0/0a/Monarch_Butterfly_Danaus_plexippus_on_Milkweed_Hybrid_2800px.jpg/500px-Monarch_Butterfly_Danaus_plexippus_on_Milkweed_Hybrid_2800px.jpg" },
+  { name: "Airsupra", slug: "airsupra", generic: "Albuterol/Budesonide", price: 201, original: 503.93, discount: 60, img: "thumb/1/12/Malapascua_%28island%29%2C_Tropical_beach%2C_Philippines.jpg/500px-Malapascua_%28island%29%2C_Tropical_beach%2C_Philippines.jpg" },
+  { name: "Abrilada", slug: "abrilada", generic: "Adalimumab-afzb", price: 207.60, original: 519, discount: 60, img: "thumb/a/ad/Amphiprion_ocellaris_%28Clown_anemonefish%29_by_Nick_Hobgood.jpg/500px-Amphiprion_ocellaris_%28Clown_anemonefish%29_by_Nick_Hobgood.jpg" },
+  { name: "Genotropin", slug: "genotropin", generic: "Somatropin", price: 89.67, original: 224.14, discount: 60, img: "thumb/f/fa/Prism_flat_rainbow_%28cropped%29.jpg/500px-Prism_flat_rainbow_%28cropped%29.jpg" },
+  { name: "Estring", slug: "estring", generic: "Estradiol", price: 249, original: 577.18, discount: 57, img: "thumb/e/e4/PIXNIO-1094468-aurora_borealis.jpg/500px-PIXNIO-1094468-aurora_borealis.jpg" },
+  { name: "Protonix", slug: "protonix", generic: "Pantoprazole", price: 200.10, original: 447.28, discount: 55, img: "thumb/5/58/Witch_Ball_%28cropped%29.jpg/500px-Witch_Ball_%28cropped%29.jpg" },
+  { name: "Premarin", slug: "premarin", generic: "Conjugated Estrogens", price: 99, original: 217.86, discount: 55, img: "thumb/7/73/Giant_oceanic_manta_ray.jpg/500px-Giant_oceanic_manta_ray.jpg" },
+  { name: "Pristiq", slug: "pristiq", generic: "Desvenlafaxine", price: 200.10, original: 435, discount: 54, img: "thumb/4/4b/Manta_birostris-Thailand3.jpg/500px-Manta_birostris-Thailand3.jpg" },
+  { name: "Xeljanz", slug: "xeljanz", generic: "Tofacitinib", price: 1518, original: 3204, discount: 53, img: "thumb/5/50/Jellyfish_Viewing.jpg/500px-Jellyfish_Viewing.jpg" },
+  { name: "Farxiga", slug: "farxiga", generic: "Dapagliflozin", price: 181.59, original: 377.82, discount: 52, img: "thumb/e/e2/Jellyfish_in_Greece.jpg/500px-Jellyfish_in_Greece.jpg" },
+  { name: "Levoxyl", slug: "levoxyl", generic: "Levothyroxine", price: 35.10, original: 72, discount: 51, img: "thumb/d/d3/A_Taraxacum_Ruderalia_dandelion_clock.jpg/500px-A_Taraxacum_Ruderalia_dandelion_clock.jpg" },
+  { name: "Cortef", slug: "cortef", generic: "Hydrocortisone", price: 45, original: 91.80, discount: 51, img: "thumb/f/fa/Cinnamon_hummingbird_%28Amazilia_rutila%29_in_flight_Los_Tarrales.jpg/500px-Cinnamon_hummingbird_%28Amazilia_rutila%29_in_flight_Los_Tarrales.jpg" },
+  { name: "Colestid", slug: "colestid", generic: "Colestipol", price: 67.20, original: 135.60, discount: 50, img: "thumb/6/62/Koi_in_a_garden_pond_in_Tuntorp_3.jpg/500px-Koi_in_a_garden_pond_in_Tuntorp_3.jpg" },
+  { name: "Zarontin", slug: "zarontin", generic: "Ethosuximide", price: 71.10, original: 143.46, discount: 50, img: "thumb/3/33/Parrotfish_turquoisse.jpg/500px-Parrotfish_turquoisse.jpg" },
+  { name: "Chantix", slug: "chantix", generic: "Varenicline", price: 94.34, original: 189.74, discount: 50, img: "thumb/b/b8/Laser_Towards_Milky_Ways_Centre.jpg/500px-Laser_Towards_Milky_Ways_Centre.jpg" },
+  { name: "Ngenla", slug: "ngenla", generic: "Somatrogon-ghla", price: 2217, original: 4434.20, discount: 50, img: "thumb/a/a1/Male_whale_shark_at_Georgia_Aquarium.jpg/500px-Male_whale_shark_at_Georgia_Aquarium.jpg" },
+  { name: "Nicotrol", slug: "nicotrol", generic: "Nicotine", price: 271.16, original: 542.34, discount: 50, img: "thumb/b/b0/Canthigaster_valentini_1.jpg/500px-Canthigaster_valentini_1.jpg" },
+  { name: "Cytomel", slug: "cytomel", generic: "Liothyronine", price: 6, original: 12, discount: 50, img: "thumb/2/2c/North_America_from_low_orbiting_satellite_Suomi_NPP.jpg/500px-North_America_from_low_orbiting_satellite_Suomi_NPP.jpg" },
+  { name: "Diflucan", slug: "diflucan", generic: "Fluconazole", price: 14.06, original: 28.12, discount: 50, img: "thumb/7/7b/Nelumbo_lutea.jpg/500px-Nelumbo_lutea.jpg" },
+  { name: "Lopid", slug: "lopid", generic: "Gemfibrozil", price: 39.60, original: 79.20, discount: 50, img: "thumb/4/49/Green_treefrog.jpg/500px-Green_treefrog.jpg" },
+  { name: "Medrol", slug: "medrol", generic: "Methylprednisolone", price: 3.15, original: 6.30, discount: 50, img: "thumb/c/cf/Tulip_Tulipa_clusiana_%27Lady_Jane%27_Rock_Ledge_Flower_Edit_2000px.jpg/500px-Tulip_Tulipa_clusiana_%27Lady_Jane%27_Rock_Ledge_Flower_Edit_2000px.jpg" },
+  { name: "Premarin Vaginal Cream", slug: "premarin-vaginal-cream", generic: "Conjugated Estrogens", price: 236.65, original: 473.30, discount: 50, img: "thumb/1/1f/Pink_flower_macro_%285947531414%29.jpg/500px-Pink_flower_macro_%285947531414%29.jpg" },
+  { name: "Tikosyn", slug: "tikosyn", generic: "Dofetilide", price: 336, original: 672, discount: 50, img: "thumb/9/9e/Blue_tang_surgeonfish.jpg/500px-Blue_tang_surgeonfish.jpg" },
+  { name: "Vfend", slug: "vfend", generic: "Voriconazole", price: 306.98, original: 613.96, discount: 50, img: "thumb/6/65/Sepia_com%C3%BAn_%28Sepia_officinalis%29%2C_Parque_natural_de_la_Arr%C3%A1bida%2C_Portugal%2C_2020-07-21%2C_DD_62.jpg/500px-Sepia_com%C3%BAn_%28Sepia_officinalis%29%2C_Parque_natural_de_la_Arr%C3%A1bida%2C_Portugal%2C_2020-07-21%2C_DD_62.jpg" },
+  { name: "Viracept", slug: "viracept", generic: "Nelfinavir", price: 607.20, original: 1214.40, discount: 50, img: "thumb/0/07/Pterois_volitans_Manado-e.jpg/500px-Pterois_volitans_Manado-e.jpg" },
+  { name: "Zyvox", slug: "zyvox", generic: "Linezolid", price: 122.74, original: 245.48, discount: 50, img: "thumb/c/c3/Odontodactylus_scyllarus_eyes.jpg/500px-Odontodactylus_scyllarus_eyes.jpg" },
+  { name: "Azulfidine", slug: "azulfidine", generic: "Sulfasalazine", price: 99.60, original: 199.20, discount: 50, img: "thumb/b/b1/Mother_and_baby_sperm_whale.jpg/500px-Mother_and_baby_sperm_whale.jpg" },
+  { name: "Azulfidine En-Tabs", slug: "azulfidine-en-tabs", generic: "Sulfasalazine", price: 130.80, original: 261.60, discount: 50, img: "thumb/0/0c/Stingray_CIty_in_Grand_Cayman.jpg/500px-Stingray_CIty_in_Grand_Cayman.jpg" },
+  { name: "Cleocin", slug: "cleocin", generic: "Clindamycin", price: 36.56, original: 73.12, discount: 50, img: "thumb/8/8b/Australia_green_tree_frog_%28Litoria_caerulea%29_crop.jpg/500px-Australia_green_tree_frog_%28Litoria_caerulea%29_crop.jpg" },
+  { name: "Zavzpret", slug: "zavzpret", generic: "Zavegepant", price: 594.84, original: 1189.65, discount: 50, img: "thumb/1/1e/Odontodactylus_scyllarus_R%C3%A9union.jpg/500px-Odontodactylus_scyllarus_R%C3%A9union.jpg" },
+  { name: "Insulin Lispro", slug: "insulin-lispro", generic: "Insulin Lispro", price: 25, original: null, discount: null, img: "thumb/1/18/Flower_petals_macro.jpg/500px-Flower_petals_macro.jpg" }
 ];
+
+var IMG_BASE = "https://upload.wikimedia.org/wikipedia/commons/";
 
 function fmt(n) {
   if (n === null || n === undefined) return "N/A";
@@ -241,13 +243,17 @@ function renderDrugs(list) {
     var genericStr = d.generic || "";
     if (d.maker) genericStr += (genericStr ? " \u00B7 " : "") + d.maker;
 
-    card.innerHTML =
+    var bgDiv = d.img ? '<div class="drug-card-bg" style="background-image:url(\'' + IMG_BASE + d.img + '\')"></div>' : '';
+
+    card.innerHTML = bgDiv +
+      '<div class="drug-card-body">' +
       '<div class="drug-card-name">' + d.name + '</div>' +
       '<div class="drug-card-generic">' + genericStr + '</div>' +
       '<div class="drug-card-price">' + priceStr + '</div>' +
       (origStr ? '<div class="drug-card-original">' + origStr + '</div>' : '') +
       (d.discount ? '<span class="drug-card-savings">' + d.discount + '% off</span>' : '') +
-      '<span class="drug-card-link">View on TrumpRx \u2192</span>';
+      '<span class="drug-card-link">View on TrumpRx \u2192</span>' +
+      '</div>';
 
     grid.appendChild(card);
   });
