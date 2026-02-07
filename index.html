@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FruitRx - Find the World's Lowest Prices on Prescription Drugs!</title>
+<meta name="description" content="FruitRx is rewriting the script, bringing major savings on essential medications for all Americans.">
+<meta property="og:title" content="FruitRx - Prescription Savings for All Americans">
+<meta property="og:description" content="The same drugs, made in the same factories, at the same dosages. Now at the world's lowest prices.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍊</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --aero-blue: #00a2ff;
+  --aero-green: #7ec845;
+  --aero-sky: #4fc3f7;
+  --aero-white: rgba(255,255,255,0.85);
+  --glass: rgba(255,255,255,0.25);
+  --glass-border: rgba(255,255,255,0.5);
+  --glow: 0 0 30px rgba(0,162,255,0.3);
+  --fruit-orange: #ff8c00;
+  --fruit-green: #32cd32;
+  --fruit-pink: #ff69b4;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+  background: linear-gradient(180deg, #87CEEB 0%, #b3e5fc 15%, #e1f5fe 30%, #e8f5e9 50%, #c8e6c9 70%, #a5d6a7 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #1a3a4a;
+}
+
+/* === FLOATING BUBBLES === */
+.bubbles {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,255,255,0.1));
+  border: 1px solid rgba(255,255,255,0.4);
+  animation: floatUp linear infinite;
+  box-shadow: inset 0 -5px 15px rgba(0,162,255,0.1), 0 0 10px rgba(255,255,255,0.3);
+}
+@keyframes floatUp {
+  0% { transform: translateY(110vh) rotate(0deg) scale(1); opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(-10vh) rotate(360deg) scale(0.8); opacity: 0; }
+}
+
+/* === FLOATING FRUIT === */
+.fruit-float {
+  position: fixed;
+  font-size: 2rem;
+  animation: fruitDrift linear infinite;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+@keyframes fruitDrift {
+  0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 0.8; }
+  100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+}
+
+/* === LENS FLARE === */
+.lens-flare {
+  position: fixed;
+  top: -100px;
+  right: 10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255,255,200,0.4) 0%, rgba(255,200,50,0.1) 30%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+  animation: flarePulse 4s ease-in-out infinite;
+}
+@keyframes flarePulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* === WATER DROPS ON GLASS === */
+.waterdrop {
+  position: absolute;
+  width: 8px; height: 12px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.9), rgba(180,220,255,0.4));
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 -1px 2px rgba(0,0,0,0.05);
+}
+
+/* === GLASS PANEL === */
+.glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0,100,200,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.8),
+    inset 0 -1px 0 rgba(255,255,255,0.3);
+}
+
+.glass-strong {
+  background: linear-gradient(135deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.35) 100%);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1.5px solid rgba(255,255,255,0.7);
+  border-radius: 24px;
+  box-shadow:
+    0 12px 40px rgba(0,100,200,0.15),
+    inset 0 2px 0 rgba(255,255,255,0.9),
+    inset 0 -2px 0 rgba(255,255,255,0.2),
+    0 0 60px rgba(0,162,255,0.08);
+}
+
+/* === GLOSSY BUTTON === */
+.btn-glossy {
+  display: inline-block;
+  padding: 16px 40px;
+  background: linear-gradient(180deg, #5dd9ff 0%, #00a2ff 40%, #0080cc 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  text-decoration: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow:
+    0 4px 15px rgba(0,162,255,0.4),
+    inset 0 2px 0 rgba(255,255,255,0.4),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+.btn-glossy::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4), transparent);
+  border-radius: 50px 50px 0 0;
+}
+.btn-glossy:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 25px rgba(0,162,255,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.5),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-glossy-green {
+  background: linear-gradient(180deg, #a0e85a 0%, #7ec845 40%, #5a9e30 100%);
+  box-shadow:
+    0 4px 15px rgba(126,200,69,0.4),
+    inset 0 2px 0 rgba(255,255,255,0.4),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+}
+.btn-glossy-green:hover {
+  box-shadow:
+    0 8px 25px rgba(126,200,69,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.5),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-glossy-orange {
+  background: linear-gradient(180deg, #ffb347 0%, #ff8c00 40%, #cc7000 100%);
+  box-shadow:
+    0 4px 15px rgba(255,140,0,0.4),
+    inset 0 2px 0 rgba(255,255,255,0.4),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+/* === NAV === */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 12px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 100%);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-bottom: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 4px 20px rgba(0,100,200,0.08);
+}
+.logo {
+  font-size: 2rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff8c00, #ff6b00, #ff4500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(255,140,0,0.3));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-fruit { font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2)); }
+.nav-links { display: flex; gap: 20px; align-items: center; }
+.nav-links a {
+  color: #1a5a7a;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 50px;
+  background: rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.5);
+  transition: all 0.3s;
+}
+.nav-links a:hover {
+  background: rgba(255,255,255,0.6);
+  box-shadow: 0 2px 10px rgba(0,162,255,0.2);
+}
+
+/* === HERO === */
+.hero {
+  position: relative;
+  padding: 160px 40px 100px;
+  text-align: center;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(126,200,69,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(0,162,255,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 0%, rgba(255,200,50,0.2) 0%, transparent 40%);
+  z-index: 0;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.hero h1 {
+  font-size: 3.8rem;
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #0077b6, #00a2ff, #48cae4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 8px rgba(0,100,200,0.15));
+}
+.hero h1 .highlight {
+  background: linear-gradient(135deg, #ff8c00, #ff6b00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-subtitle {
+  font-size: 1.35rem;
+  line-height: 1.7;
+  color: #2a5a6a;
+  max-width: 700px;
+  margin: 0 auto 40px;
+  font-weight: 600;
+}
+.hero-eagle {
+  font-size: 8rem;
+  display: block;
+  margin: 30px auto;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.15));
+  animation: eagleFloat 3s ease-in-out infinite;
+}
+@keyframes eagleFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-15px) rotate(2deg); }
+}
+
+/* === GIANT FRUIT BOWL (replaces eagle) === */
+.fruit-bowl {
+  font-size: 5rem;
+  margin: 20px auto;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  filter: drop-shadow(0 10px 25px rgba(0,0,0,0.15));
+}
+.fruit-bowl span {
+  display: inline-block;
+  animation: fruitBounce 2s ease-in-out infinite;
+}
+.fruit-bowl span:nth-child(1) { animation-delay: 0s; }
+.fruit-bowl span:nth-child(2) { animation-delay: 0.15s; }
+.fruit-bowl span:nth-child(3) { animation-delay: 0.3s; }
+.fruit-bowl span:nth-child(4) { animation-delay: 0.45s; }
+.fruit-bowl span:nth-child(5) { animation-delay: 0.6s; }
+.fruit-bowl span:nth-child(6) { animation-delay: 0.75s; }
+.fruit-bowl span:nth-child(7) { animation-delay: 0.9s; }
+@keyframes fruitBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.1); }
+}
+
+/* === BANNER RIBBON === */
+.ribbon {
+  display: inline-block;
+  padding: 12px 50px;
+  background: linear-gradient(180deg, #ffe566 0%, #ffcc00 40%, #e6b800 100%);
+  color: #6b4400;
+  font-weight: 900;
+  font-size: 1.4rem;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 15px rgba(230,184,0,0.4),
+    inset 0 2px 0 rgba(255,255,255,0.5),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  position: relative;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+}
+
+/* === PRICE COMPARISON SECTION === */
+.section {
+  position: relative;
+  z-index: 2;
+  padding: 60px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.section-title {
+  text-align: center;
+  font-size: 2.8rem;
+  font-weight: 900;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #0077b6, #00a2ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.section-subtitle {
+  text-align: center;
+  font-size: 1.15rem;
+  color: #3a6a7a;
+  max-width: 600px;
+  margin: 0 auto 50px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* === COMPARISON CARD === */
+.comparison-card {
+  padding: 40px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.comparison-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #00a2ff, #7ec845, #ff8c00);
+  border-radius: 24px 24px 0 0;
+}
+.comparison-visual {
+  flex-shrink: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(200,230,255,0.3));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  box-shadow:
+    0 8px 30px rgba(0,100,200,0.15),
+    inset 0 -5px 15px rgba(0,100,200,0.05);
+  border: 2px solid rgba(255,255,255,0.6);
+}
+.comparison-details { flex: 1; }
+.comparison-details h3 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0077b6;
+  margin-bottom: 20px;
+}
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.price-label {
+  width: 200px;
+  color: #5a7a8a;
+  font-size: 0.95rem;
+}
+.price-old {
+  color: #cc4444;
+  text-decoration: line-through;
+  font-size: 1.3rem;
+}
+.price-new {
+  font-size: 1.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #7ec845, #5a9e30);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.savings-badge {
+  display: inline-block;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #7ec845, #5a9e30);
+  color: white;
+  font-weight: 800;
+  font-size: 1.3rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(126,200,69,0.4);
+  margin-top: 10px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+/* === DRUG GRID === */
+.drug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 30px;
+}
+.drug-card {
+  padding: 30px;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.drug-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 50px rgba(0,100,200,0.2);
+}
+.drug-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--aero-blue), var(--aero-green));
+}
+.drug-emoji {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+.drug-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0077b6;
+  margin-bottom: 10px;
+}
+.drug-price-old {
+  color: #cc4444;
+  text-decoration: line-through;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+.drug-price-new {
+  font-size: 2rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #7ec845, #32a852);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.drug-freq {
+  color: #6a8a9a;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* === QUOTE SECTION === */
+.quote-section {
+  position: relative;
+  z-index: 2;
+  padding: 80px 40px;
+  text-align: center;
+}
+.quote-card {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 50px 60px;
+  position: relative;
+}
+.quote-card .big-quote {
+  position: absolute;
+  top: 10px; left: 20px;
+  font-size: 6rem;
+  color: rgba(0,162,255,0.15);
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.quote-text {
+  font-size: 1.3rem;
+  line-height: 1.8;
+  color: #2a5a6a;
+  font-weight: 600;
+  font-style: italic;
+  position: relative;
+}
+.quote-attribution {
+  margin-top: 20px;
+  font-weight: 800;
+  color: #0077b6;
+  font-size: 1.1rem;
+}
+
+/* === RAINBOW DIVIDER === */
+.rainbow-divider {
+  height: 6px;
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b59b6);
+  border-radius: 3px;
+  max-width: 400px;
+  margin: 40px auto;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* === FAQ === */
+.faq-section {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 40px;
+}
+.faq-item {
+  margin-bottom: 16px;
+}
+.faq-question {
+  width: 100%;
+  text-align: left;
+  padding: 20px 28px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a5a7a;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 16px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.faq-question:hover {
+  background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+  box-shadow: 0 4px 15px rgba(0,100,200,0.1);
+}
+.faq-question .faq-icon {
+  font-size: 1.3rem;
+  transition: transform 0.3s;
+}
+.faq-question.active .faq-icon {
+  transform: rotate(90deg);
+}
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  padding: 0 28px;
+  color: #3a6a7a;
+  line-height: 1.7;
+  font-weight: 500;
+}
+.faq-answer.open {
+  max-height: 300px;
+  padding: 16px 28px 20px;
+}
+
+/* === FOOTER === */
+footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 60px 40px;
+  margin-top: 40px;
+  background: linear-gradient(180deg, transparent, rgba(0,100,200,0.05));
+}
+.footer-fruit {
+  font-size: 2.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+footer p {
+  color: #5a8a9a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+footer a {
+  color: #00a2ff;
+  text-decoration: none;
+  font-weight: 700;
+}
+footer a:hover { text-decoration: underline; }
+
+/* === VISTA ORB === */
+.vista-orb {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(0,162,255,0.3) 50%, rgba(0,100,200,0.5));
+  position: absolute;
+  box-shadow:
+    0 10px 30px rgba(0,100,200,0.2),
+    inset 0 -5px 15px rgba(0,50,100,0.1);
+  border: 2px solid rgba(255,255,255,0.5);
+}
+
+/* === DECORATIVE PILLS === */
+.deco-pill {
+  position: absolute;
+  border-radius: 50px;
+  z-index: 1;
+  opacity: 0.6;
+}
+.pill-1 {
+  width: 60px; height: 120px;
+  background: linear-gradient(180deg, #ff8c00 50%, white 50%);
+  top: 200px; left: 5%;
+  transform: rotate(-25deg);
+  box-shadow: 0 4px 15px rgba(255,140,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
+  animation: pillFloat 6s ease-in-out infinite;
+}
+.pill-2 {
+  width: 50px; height: 100px;
+  background: linear-gradient(180deg, #00a2ff 50%, white 50%);
+  top: 400px; right: 8%;
+  transform: rotate(15deg);
+  box-shadow: 0 4px 15px rgba(0,162,255,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
+  animation: pillFloat 7s ease-in-out infinite 1s;
+}
+.pill-3 {
+  width: 40px; height: 80px;
+  background: linear-gradient(180deg, #7ec845 50%, white 50%);
+  top: 600px; left: 10%;
+  transform: rotate(30deg);
+  box-shadow: 0 4px 15px rgba(126,200,69,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
+  animation: pillFloat 5s ease-in-out infinite 0.5s;
+}
+.pill-4 {
+  width: 55px; height: 110px;
+  background: linear-gradient(180deg, #ff69b4 50%, white 50%);
+  bottom: 300px; right: 5%;
+  transform: rotate(-10deg);
+  box-shadow: 0 4px 15px rgba(255,105,180,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
+  animation: pillFloat 8s ease-in-out infinite 2s;
+}
+@keyframes pillFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, -25deg)); }
+  50% { transform: translateY(-30px) rotate(var(--rot, -25deg)); }
+}
+
+/* === NOTIFICATION BELL === */
+.notify-section {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 60px 40px;
+}
+.notify-card {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 50px;
+}
+.notify-card h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #0077b6;
+  margin-bottom: 16px;
+}
+.notify-card p {
+  color: #3a6a7a;
+  font-weight: 600;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+/* === SPARKLE === */
+.sparkle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+  animation: sparkleAnim 0.8s ease-out forwards;
+}
+@keyframes sparkleAnim {
+  0% { transform: scale(0) rotate(0); opacity: 1; }
+  50% { transform: scale(1) rotate(180deg); opacity: 0.8; }
+  100% { transform: scale(0) rotate(360deg); opacity: 0; }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 2.4rem; }
+  .hero { padding: 140px 20px 60px; }
+  .comparison-card { flex-direction: column; padding: 25px; }
+  .comparison-visual { width: 150px; height: 150px; font-size: 4rem; }
+  .section { padding: 40px 20px; }
+  nav { padding: 12px 20px; }
+  .logo { font-size: 1.4rem; }
+  .drug-grid { grid-template-columns: 1fr; }
+  .section-title { font-size: 2rem; }
+  .fruit-bowl { font-size: 3rem; }
+  .quote-card { padding: 30px; }
+}
+
+/* === LEAF DECORATION === */
+.leaf {
+  position: fixed;
+  font-size: 2rem;
+  pointer-events: none;
+  z-index: 0;
+  animation: leafFall linear infinite;
+  opacity: 0.5;
+}
+@keyframes leafFall {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.5; }
+  100% { transform: translateY(110vh) translateX(100px) rotate(720deg); opacity: 0; }
+}
+
+/* === SHIMMER EFFECT === */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg, #0077b6, #00a2ff, #ffe066, #00a2ff, #0077b6);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+</style>
+</head>
+<body>
+
+<!-- Floating Bubbles -->
+<div class="bubbles" id="bubbles"></div>
+
+<!-- Lens Flare -->
+<div class="lens-flare"></div>
+
+<!-- Decorative Pills -->
+<div class="deco-pill pill-1"></div>
+<div class="deco-pill pill-2"></div>
+<div class="deco-pill pill-3"></div>
+<div class="deco-pill pill-4"></div>
+
+<!-- Navigation -->
+<nav>
+  <div class="logo">
+    <span class="logo-fruit">🍊</span> FruitRx
+  </div>
+  <div class="nav-links">
+    <a href="#medications">🫐 Browse Medications</a>
+    <a href="#faq">🍋 FAQ</a>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="ribbon">🏆 MOST-FAVORED-NATION PRICING 🏆</div>
+    <h1>Find the world's <span class="highlight">lowest prices</span> on prescription drugs!</h1>
+
+    <div class="fruit-bowl">
+      <span>🍎</span>
+      <span>🍊</span>
+      <span>🍋</span>
+      <span>💊</span>
+      <span>🍇</span>
+      <span>🍑</span>
+      <span>🥝</span>
+    </div>
+
+    <p class="hero-subtitle">
+      FruitRx is rewriting the script, bringing major savings on essential medications for all Americans. Fresh as fruit, sweet as savings.
+    </p>
+    <p class="hero-subtitle" style="font-size: 1.1rem; color: #4a7a8a;">
+      America was being overcharged for medicine. The same drugs, made in the same factories, at the same dosages, are costing Americans up to <strong>1000% more</strong> than in any other country. This is unacceptable.
+    </p>
+    <a href="#medications" class="btn-glossy">🍊 Browse Medications</a>
+  </div>
+</section>
+
+<!-- Price Comparison -->
+<section class="section">
+  <div class="comparison-card glass-strong">
+    <div class="comparison-visual">💉</div>
+    <div class="comparison-details">
+      <h3>Gonal-F, 450IU per pen</h3>
+      <div class="price-row">
+        <span class="price-label">🇺🇸 USA Current Price:</span>
+        <span class="price-old">$1,449/pen</span>
+      </div>
+      <div class="price-row">
+        <span class="price-label">🌍 Global Reference Price:</span>
+        <span style="color: #5a8a9a; font-size: 1.1rem;">$355/pen</span>
+      </div>
+      <div class="price-row">
+        <span class="price-label">🍊 New FruitRx Price:</span>
+        <span class="price-new">JUICY SAVINGS</span>
+      </div>
+      <div class="savings-badge">🎉 93% OFF — Fresh Squeezed!</div>
+    </div>
+  </div>
+</section>
+
+<!-- Quote -->
+<section class="quote-section">
+  <div class="quote-card glass-strong">
+    <span class="big-quote">"</span>
+    <p class="quote-text">
+      Thanks to President Trump, the days of Big Pharma price-gouging are over. The President has ensured every American gets the lowest prices on prescription medications in the developed world.
+    </p>
+    <p class="quote-text" style="margin-top: 20px;">
+      This is the most impactful prescription price reset in the history of our country. It puts more money in Americans' pockets and finally brings care back within reach.
+    </p>
+    <p class="quote-attribution">— FruitRx Mission Statement 🍊</p>
+  </div>
+</section>
+
+<div class="rainbow-divider"></div>
+
+<!-- Medications Grid -->
+<section class="section" id="medications">
+  <h2 class="section-title shimmer-text">🍑 The proof is in the prices 🍑</h2>
+  <p class="section-subtitle">Compare prices on commonly prescribed medications like these, and see how much you can save with the power of fruit.</p>
+
+  <div class="drug-grid">
+    <div class="drug-card glass">
+      <span class="drug-emoji">💊</span>
+      <div class="drug-name">Wegovy&reg; Pill</div>
+      <div class="drug-price-old">Was $1,349/mo</div>
+      <div class="drug-price-new">$149/mo</div>
+      <div class="drug-freq">Fresh from the orchard</div>
+      <br>
+      <a href="#" class="btn-glossy-green btn-glossy" style="font-size:0.9rem; padding: 10px 24px;">🍏 Get Notified</a>
+    </div>
+
+    <div class="drug-card glass">
+      <span class="drug-emoji">🖊️</span>
+      <div class="drug-name">Wegovy&reg; Pen</div>
+      <div class="drug-price-old">Was $1,349/mo</div>
+      <div class="drug-price-new">$199/mo</div>
+      <div class="drug-freq">Freshly picked daily</div>
+      <br>
+      <a href="#" class="btn-glossy-green btn-glossy" style="font-size:0.9rem; padding: 10px 24px;">🍐 Get Notified</a>
+    </div>
+
+    <div class="drug-card glass">
+      <span class="drug-emoji">💉</span>
+      <div class="drug-name">Ozempic&reg;</div>
+      <div class="drug-price-old">Was $1,028/mo</div>
+      <div class="drug-price-new">$199/mo</div>
+      <div class="drug-freq">Vine-ripened savings</div>
+      <br>
+      <a href="#" class="btn-glossy-orange btn-glossy" style="font-size:0.9rem; padding: 10px 24px;">🍊 Get Notified</a>
+    </div>
+
+    <div class="drug-card glass">
+      <span class="drug-emoji">💊</span>
+      <div class="drug-name">Zepbound&reg;</div>
+      <div class="drug-price-old">Was $1,087/mo</div>
+      <div class="drug-price-new">$299/mo</div>
+      <div class="drug-freq">Farm to pharmacy</div>
+      <br>
+      <a href="#" class="btn-glossy btn-glossy" style="font-size:0.9rem; padding: 10px 24px;">🫐 Get Notified</a>
+    </div>
+  </div>
+</section>
+
+<div class="rainbow-divider"></div>
+
+<!-- FAQ Section -->
+<section class="faq-section" id="faq">
+  <h2 class="section-title">🍋 Frequently Asked Questions 🍋</h2>
+  <p class="section-subtitle">Everything you need to know about your freshest prescription savings.</p>
+
+  <h3 style="color: #0077b6; font-weight: 800; margin: 30px 0 15px; font-size: 1.3rem;">🍎 For Patients</h3>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍊</span> What is FruitRx?
+    </button>
+    <div class="faq-answer">
+      FruitRx is a program that brings Most-Favored-Nation pricing to prescription drugs in America. The same medications you already take, now at the lowest prices available in the developed world. Fresh, juicy, unprecedented savings.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍇</span> Which drugs are listed?
+    </button>
+    <div class="faq-answer">
+      We're starting with some of the most commonly prescribed and most overpriced medications, including GLP-1 drugs like Wegovy, Ozempic, and Zepbound. More medications will be added regularly, like fresh fruit arriving at the market.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍑</span> Do I need an account?
+    </button>
+    <div class="faq-answer">
+      You can browse prices without an account. To purchase medications, you'll need to register and have a valid prescription from your healthcare provider.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🥝</span> Can I use my local pharmacy?
+    </button>
+    <div class="faq-answer">
+      FruitRx works with participating pharmacies nationwide. Check availability in your area when you browse medications.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍋</span> Do I need a prescription?
+    </button>
+    <div class="faq-answer">
+      Yes, all medications require a valid prescription from a licensed healthcare provider. FruitRx can connect you with telehealth providers if needed.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍎</span> What does the service cost?
+    </button>
+    <div class="faq-answer">
+      The FruitRx service itself is free. You only pay the listed price for your medications. No hidden fees. No seeds. Just savings.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🫐</span> Does this work with insurance?
+    </button>
+    <div class="faq-answer">
+      FruitRx prices are often lower than insurance copays. You can use FruitRx regardless of your insurance status. Compare and choose whichever option saves you more.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍊</span> Will my medications look different?
+    </button>
+    <div class="faq-answer">
+      Some medications may have different packaging or appearance due to international sourcing, but they contain the same active ingredients, same dosages, made in the same factories. Same fruit, different label.
+    </div>
+  </div>
+
+  <h3 style="color: #0077b6; font-weight: 800; margin: 30px 0 15px; font-size: 1.3rem;">🥭 For Prescribers & Pharmacies</h3>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍊</span> How are prescriptions routed?
+    </button>
+    <div class="faq-answer">
+      Prescriptions are electronically routed through our network of participating pharmacies using standard ePrescribing protocols.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍇</span> How does pharmacy claim processing work?
+    </button>
+    <div class="faq-answer">
+      Claims are processed through our platform at the listed FruitRx price. Pharmacies receive payment directly through our network.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+      <span class="faq-icon">🍑</span> What about IRA MFP program compliance?
+    </button>
+    <div class="faq-answer">
+      FruitRx pricing is fully compliant with the Most-Favored-Nation provisions of the Inflation Reduction Act. All pricing is transparently benchmarked against international reference prices.
+    </div>
+  </div>
+</section>
+
+<!-- Get Notified -->
+<section class="notify-section">
+  <div class="notify-card glass-strong">
+    <h2>🍊 Stay Fresh, Stay Saved 🍊</h2>
+    <p>Get notified when new medications are added to FruitRx. More juicy savings are ripening every day.</p>
+    <a href="#" class="btn-glossy">🔔 Get Notified</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-fruit">
+    <span>🍎</span><span>🍊</span><span>🍋</span><span>🍇</span><span>🍑</span><span>🥝</span><span>🫐</span><span>🍓</span><span>🥭</span>
+  </div>
+  <p>Designed and Engineered in D.C. by <strong>National Fruit Studio</strong></p>
+  <p style="margin-top: 8px; font-size: 0.85rem; color: #8aacbc;">
+    PARODY — Not affiliated with any government agency. For entertainment purposes only.
+  </p>
+  <p style="margin-top: 12px;">
+    <a href="#">Privacy Policy</a> · <a href="#">Terms of Produce</a>
+  </p>
+</footer>
+
+<script>
+// Generate floating bubbles
+const bubblesContainer = document.getElementById('bubbles');
+for (let i = 0; i < 25; i++) {
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  const size = Math.random() * 60 + 15;
+  bubble.style.width = size + 'px';
+  bubble.style.height = size + 'px';
+  bubble.style.left = Math.random() * 100 + '%';
+  bubble.style.animationDuration = (Math.random() * 15 + 10) + 's';
+  bubble.style.animationDelay = (Math.random() * 10) + 's';
+  bubblesContainer.appendChild(bubble);
+}
+
+// Generate floating fruit
+const fruits = ['🍎','🍊','🍋','🍇','🍑','🥝','🫐','🍓','🥭','🍐','🍌','🍒'];
+for (let i = 0; i < 12; i++) {
+  const fruit = document.createElement('div');
+  fruit.className = 'fruit-float';
+  fruit.textContent = fruits[i % fruits.length];
+  fruit.style.left = Math.random() * 100 + '%';
+  fruit.style.animationDuration = (Math.random() * 20 + 15) + 's';
+  fruit.style.animationDelay = (Math.random() * 15) + 's';
+  fruit.style.fontSize = (Math.random() * 2 + 1.5) + 'rem';
+  document.body.appendChild(fruit);
+}
+
+// Generate falling leaves
+const leaves = ['🍃','🌿','☘️','🍀'];
+for (let i = 0; i < 8; i++) {
+  const leaf = document.createElement('div');
+  leaf.className = 'leaf';
+  leaf.textContent = leaves[i % leaves.length];
+  leaf.style.left = Math.random() * 100 + '%';
+  leaf.style.animationDuration = (Math.random() * 15 + 12) + 's';
+  leaf.style.animationDelay = (Math.random() * 10) + 's';
+  document.body.appendChild(leaf);
+}
+
+// FAQ toggle
+function toggleFaq(btn) {
+  const answer = btn.nextElementSibling;
+  const isOpen = answer.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('open'));
+  document.querySelectorAll('.faq-question').forEach(q => q.classList.remove('active'));
+  // Toggle current
+  if (!isOpen) {
+    answer.classList.add('open');
+    btn.classList.add('active');
+  }
+}
+
+// Sparkle on click
+document.addEventListener('click', (e) => {
+  for (let i = 0; i < 5; i++) {
+    const sparkle = document.createElement('div');
+    sparkle.className = 'sparkle';
+    sparkle.textContent = ['✨','⭐','💫','🌟','✦'][Math.floor(Math.random() * 5)];
+    sparkle.style.left = (e.clientX + (Math.random() - 0.5) * 60) + 'px';
+    sparkle.style.top = (e.clientY + (Math.random() - 0.5) * 60) + 'px';
+    sparkle.style.fontSize = (Math.random() * 1.5 + 0.8) + 'rem';
+    document.body.appendChild(sparkle);
+    setTimeout(() => sparkle.remove(), 800);
+  }
+});
+</script>
+
+</body>
+</html>
