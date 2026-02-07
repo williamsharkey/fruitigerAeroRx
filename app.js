@@ -1121,15 +1121,15 @@
   }
 
   // ================================================================
-  // 17. SWIMMING FISH (with water sounds)
+  // 17. SWIMMING FISH ECOSYSTEM (pills, growth, predation, babies)
   // ================================================================
   var fishWaterInterval = null;
+  var fishPondVisible = false;
 
   function setupFish() {
     var pond = document.getElementById("fishPond");
     if (!pond) return;
 
-    var FISH_COUNT = 8;
     var FISH_COLORS = [
       { body: "#4a9fd8", fin: "#3580b8", belly: "#a0d4f0" },
       { body: "#e88040", fin: "#c86020", belly: "#f8c090" },
@@ -1139,6 +1139,17 @@
       { body: "#d8a840", fin: "#b88820", belly: "#f0d888" },
       { body: "#48b8b8", fin: "#289898", belly: "#90e0e0" },
       { body: "#c87898", fin: "#a85878", belly: "#e8b0c8" }
+    ];
+
+    var PILL_COLORS = [
+      { top: "#ff6b6b", bot: "#fff" },
+      { top: "#4ecdc4", bot: "#fff" },
+      { top: "#ffe66d", bot: "#fff" },
+      { top: "#a06cd5", bot: "#fff" },
+      { top: "#ff9a9e", bot: "#fad0c4" },
+      { top: "#2196f3", bot: "#fff" },
+      { top: "#66bb6a", bot: "#fff" },
+      { top: "#ff7043", bot: "#ffccbc" }
     ];
 
     function makeFishSVG(c) {
@@ -1152,12 +1163,54 @@
         '</svg>';
     }
 
+    function makePillSVG(c) {
+      return '<svg viewBox="0 0 12 24" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="1" y="0" width="10" height="24" rx="5" fill="' + c.bot + '" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>' +
+        '<rect x="1" y="0" width="10" height="12" rx="5" fill="' + c.top + '"/>' +
+        '<ellipse cx="6" cy="6" rx="3" ry="5" fill="rgba(255,255,255,0.35)"/>' +
+        '</svg>';
+    }
+
+    // ---- PILL MANAGEMENT ----
+    var pills = [];
+    var pillSpawnTimer = null;
+
+    function spawnPill() {
+      if (!fishPondVisible || pills.length > 15) return;
+      var w = pond.offsetWidth || 800;
+      var pc = PILL_COLORS[Math.floor(Math.random() * PILL_COLORS.length)];
+      var el = document.createElement("div");
+      el.className = "fish"; // reuse fish styling (user-select:none, pointer-events:none, position:absolute)
+      el.innerHTML = makePillSVG(pc);
+      el.querySelector("svg").style.width = "12px";
+      el.querySelector("svg").style.height = "24px";
+      pond.appendChild(el);
+      var pill = {
+        el: el,
+        x: 40 + Math.random() * (w - 80),
+        y: -30,
+        vy: 0.4 + Math.random() * 0.6,
+        vx: (Math.random() - 0.5) * 0.3,
+        wobble: Math.random() * Math.PI * 2,
+        alive: true
+      };
+      pills.push(pill);
+    }
+
+    function removePill(pill) {
+      pill.alive = false;
+      if (pill.el.parentNode) pill.el.parentNode.removeChild(pill.el);
+    }
+
+    // ---- FISH STATE ----
     var fishState = [];
-    for (var i = 0; i < FISH_COUNT; i++) {
+    var INIT_FISH = 8;
+
+    function createFish(colorIdx, x, y, baseSize) {
+      var c = FISH_COLORS[colorIdx % FISH_COLORS.length];
       var el = document.createElement("div");
       el.className = "fish";
-      el.innerHTML = makeFishSVG(FISH_COLORS[i % FISH_COLORS.length]);
-      // Fish hover -> splash sound (pointer-events enabled for hover detection)
+      el.innerHTML = makeFishSVG(c);
       el.style.pointerEvents = "auto";
       el.addEventListener("mouseenter", function() {
         if (S.audioReady) playSplashSfx();
@@ -1165,60 +1218,199 @@
       pond.appendChild(el);
 
       var goingRight = Math.random() > 0.5;
-      fishState.push({
+      var fish = {
         el: el,
-        x: Math.random() * (pond.offsetWidth || 800),
-        y: 30 + Math.random() * 140,
+        colorIdx: colorIdx,
+        color: c,
+        x: x !== undefined ? x : Math.random() * (pond.offsetWidth || 800),
+        y: y !== undefined ? y : 30 + Math.random() * 140,
         vx: (1 + Math.random() * 1.5) * (goingRight ? 1 : -1),
         phase: Math.random() * Math.PI * 2,
         freq: 0.3 + Math.random() * 0.4,
         amp: 15 + Math.random() * 25,
-        size: 0.7 + Math.random() * 0.6
+        baseSize: baseSize || (0.7 + Math.random() * 0.6),
+        growth: 0,       // 0 = normal, 1.0 = 100% bigger (2x size)
+        alive: true
+      };
+      fishState.push(fish);
+      return fish;
+    }
+
+    // Spawn initial fish
+    for (var i = 0; i < INIT_FISH; i++) {
+      createFish(i);
+    }
+
+    // ---- EAT SFX ----
+    function playEatSfx() {
+      if (!S.audioReady) return;
+      var ctx = actx; var now = ctx.currentTime;
+      var osc = ctx.createOscillator(); var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(500, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.15);
+    }
+
+    function playBigEatSfx() {
+      if (!S.audioReady) return;
+      var ctx = actx; var now = ctx.currentTime;
+      // Crunch + low thud
+      [300, 150, 80].forEach(function(f, i) {
+        var osc = ctx.createOscillator(); var gain = ctx.createGain();
+        osc.type = i === 0 ? "sawtooth" : "sine";
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.08, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.12);
+        var filt = ctx.createBiquadFilter();
+        filt.type = "lowpass"; filt.frequency.value = 400;
+        osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i * 0.05); osc.stop(now + i * 0.05 + 0.12);
       });
     }
 
-    // Ambient water sounds when fish pond is visible
+    function playBirthSfx() {
+      if (!S.audioReady) return;
+      var ctx = actx; var now = ctx.currentTime;
+      // Sparkly ascending
+      [600, 800, 1000, 1200].forEach(function(f, i) {
+        var osc = ctx.createOscillator(); var gain = ctx.createGain();
+        osc.type = "sine"; osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, now + i * 0.06);
+        gain.gain.linearRampToValueAtTime(0.06, now + i * 0.06 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.3);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i * 0.06); osc.stop(now + i * 0.06 + 0.3);
+      });
+    }
+
+    // ---- COLLISION DETECTION ----
+    function dist(a, b) {
+      var dx = a.x - b.x, dy = (a.y + a._dispY) - (b.y + b._dispY);
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function fishEffectiveSize(f) {
+      return f.baseSize * (1 + f.growth);
+    }
+
+    function isPredator(f) {
+      return f.growth >= 1.0; // 100% bigger = 2x original
+    }
+
+    // ---- MAIN ANIMATION LOOP ----
+    function animateFish() {
+      var w = pond.offsetWidth || 800;
+      var t = Date.now() / 1000;
+
+      // Update pills
+      for (var pi = pills.length - 1; pi >= 0; pi--) {
+        var p = pills[pi];
+        if (!p.alive) { pills.splice(pi, 1); continue; }
+        p.y += p.vy;
+        p.x += p.vx + Math.sin(t * 2 + p.wobble) * 0.3;
+        // Remove if off bottom
+        if (p.y > 220) { removePill(p); pills.splice(pi, 1); continue; }
+        p.el.style.transform = "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px) rotate(" + (Math.sin(t * 1.5 + p.wobble) * 15).toFixed(1) + "deg)";
+      }
+
+      // Update fish
+      for (var i = fishState.length - 1; i >= 0; i--) {
+        var f = fishState[i];
+        if (!f.alive) {
+          if (f.el.parentNode) f.el.parentNode.removeChild(f.el);
+          fishState.splice(i, 1);
+          continue;
+        }
+        f.x += f.vx;
+        var yOff = Math.sin(t * f.freq + f.phase) * f.amp;
+        f._dispY = yOff; // store for collision
+
+        // Turn at edges
+        if (f.x > w + 80) f.vx = -(1 + Math.random() * 1.5);
+        else if (f.x < -80) f.vx = (1 + Math.random() * 1.5);
+
+        var sz = fishEffectiveSize(f);
+        var scaleX = f.vx > 0 ? sz : -sz;
+        f.el.style.transform = "translate(" + f.x.toFixed(1) + "px," + (f.y + yOff).toFixed(1) + "px) scale(" + scaleX.toFixed(3) + "," + sz.toFixed(3) + ")";
+
+        // ---- Fish eats pills ----
+        for (var pi2 = pills.length - 1; pi2 >= 0; pi2--) {
+          var pill = pills[pi2];
+          if (!pill.alive) continue;
+          var dx = f.x + 30 * sz - pill.x;
+          var dy = (f.y + yOff) + 15 * sz - pill.y;
+          var eatDist = 25 * sz;
+          if (dx * dx + dy * dy < eatDist * eatDist) {
+            // Eat the pill! Grow 20% (of base), cap at 100% growth
+            f.growth = Math.min(f.growth + 0.2, 1.0);
+            removePill(pill);
+            pills.splice(pi2, 1);
+            playEatSfx();
+          }
+        }
+
+        // ---- Predator fish eats smaller fish ----
+        if (isPredator(f)) {
+          for (var j = fishState.length - 1; j >= 0; j--) {
+            if (j === i || !fishState[j].alive) continue;
+            var prey = fishState[j];
+            if (isPredator(prey)) continue; // predators don't eat each other
+            var pdx = f.x - prey.x;
+            var pdy = (f.y + yOff) - (prey.y + (prey._dispY || 0));
+            var pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+            var eatRadius = 35 * fishEffectiveSize(f);
+            if (pdist < eatRadius) {
+              // Prey is eaten! Spawn 2 babies with prey's color at 10% base size
+              prey.alive = false;
+              playBigEatSfx();
+              // Spawn 2 baby fish
+              setTimeout(function(preyColor, preyX, preyY) {
+                return function() {
+                  playBirthSfx();
+                  createFish(preyColor, preyX - 20, preyY, 0.1);
+                  createFish(preyColor, preyX + 20, preyY, 0.1);
+                };
+              }(prey.colorIdx, prey.x, prey.y), 300);
+
+              // Predator shrinks back to half growth after eating
+              f.growth = f.growth * 0.5;
+            }
+          }
+        }
+      }
+
+      requestAnimationFrame(animateFish);
+    }
+    requestAnimationFrame(animateFish);
+
+    // ---- PILL SPAWNING (when pond visible) ----
     var fishObserver = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
+        fishPondVisible = entry.isIntersecting;
         if (entry.isIntersecting) {
-          // Start periodic gentle water sounds
           if (!fishWaterInterval && S.audioReady) {
             fishWaterInterval = setInterval(function() {
               if (S.audioReady) playSfx("water");
             }, 1500 + Math.random() * 2000);
           }
-        } else {
-          if (fishWaterInterval) {
-            clearInterval(fishWaterInterval);
-            fishWaterInterval = null;
+          if (!pillSpawnTimer) {
+            pillSpawnTimer = setInterval(function() {
+              if (fishPondVisible) spawnPill();
+            }, 2000 + Math.random() * 3000);
+            // Spawn a few immediately
+            spawnPill(); spawnPill();
           }
+        } else {
+          if (fishWaterInterval) { clearInterval(fishWaterInterval); fishWaterInterval = null; }
+          if (pillSpawnTimer) { clearInterval(pillSpawnTimer); pillSpawnTimer = null; }
         }
       });
     }, { threshold: 0.1 });
     fishObserver.observe(pond);
-
-    function animateFish() {
-      var w = pond.offsetWidth || 800;
-      var t = Date.now() / 1000;
-      for (var i = 0; i < fishState.length; i++) {
-        var f = fishState[i];
-        f.x += f.vx;
-        var yOff = Math.sin(t * f.freq + f.phase) * f.amp;
-        var displayY = f.y + yOff;
-
-        if (f.x > w + 80) {
-          f.vx = -(1 + Math.random() * 1.5);
-        } else if (f.x < -80) {
-          f.vx = (1 + Math.random() * 1.5);
-        }
-
-        var scaleX = f.vx > 0 ? f.size : -f.size;
-        var scaleY = f.size;
-        f.el.style.transform = "translate(" + f.x.toFixed(1) + "px," + displayY.toFixed(1) + "px) scale(" + scaleX.toFixed(2) + "," + scaleY.toFixed(2) + ")";
-      }
-      requestAnimationFrame(animateFish);
-    }
-    requestAnimationFrame(animateFish);
   }
 
   // ================================================================
