@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse Medications - FruitRx</title>
+<meta name="description" content="Browse all 43 medications available at Most-Favored-Nation pricing. Frutiger Aero edition.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230d8af0'/><ellipse cx='50' cy='30' rx='30' ry='18' fill='rgba(255,255,255,0.5)'/></svg>">
+<style>
+.browse-header {
+  position: relative;
+  z-index: 2;
+  padding: 90px 30px 30px;
+  text-align: center;
+}
+.browse-header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,40,80,0.3);
+  margin-bottom: 8px;
+}
+.browse-header p {
+  color: rgba(255,255,255,0.85);
+  font-size: 1rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,40,80,0.2);
+}
+.browse-toolbar {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto 20px;
+  padding: 0 30px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--aero-text);
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.4);
+  transition: background 0.15s, border-color 0.15s;
+}
+.search-box:focus {
+  background: rgba(255,255,255,0.7);
+  border-color: var(--aero-sky-top);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06), 0 0 0 2px rgba(30,120,210,0.2);
+}
+.search-box::placeholder { color: #6a8a9a; }
+.sort-select {
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--aero-text);
+  cursor: pointer;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.4);
+}
+.drug-count {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto 10px;
+  padding: 0 30px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+.browse-grid {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 30px 60px;
+}
+.browse-nature {
+  position: relative;
+  z-index: 2;
+  margin: 0 auto 30px;
+  max-width: 1100px;
+  padding: 0 30px;
+}
+.browse-nature-inner {
+  border-radius: 10px;
+  overflow: hidden;
+  height: 140px;
+  box-shadow: 0 4px 20px rgba(0,40,80,0.2);
+  position: relative;
+}
+.browse-nature-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.browse-nature-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,60,120,0.3), transparent 30%, transparent 70%, rgba(0,60,120,0.3));
+}
+</style>
+</head>
+<body>
+
+<div class="page-bg"></div>
+<div class="clouds" id="clouds"></div>
+<div class="bokeh-layer" id="bokeh"></div>
+
+<div class="parody-banner">
+  PARODY &mdash; All pricing from <a href="https://trumprx.gov/browse" target="_blank" rel="noopener">TrumpRx.gov</a>. Drug links go to the official site. Not affiliated with any government agency.
+</div>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">FruitRx</a>
+  <ul class="nav-links">
+    <li><a href="browse.html" style="background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.25);">Browse Medications</a></li>
+    <li><a href="https://trumprx.gov" target="_blank" rel="noopener">Official Site</a></li>
+  </ul>
+</nav>
+
+<div class="browse-header">
+  <h1>Browse Medications</h1>
+  <p>43 drugs at Most-Favored-Nation pricing. Click any card to view details on TrumpRx.gov.</p>
+</div>
+
+<div class="browse-nature">
+  <div class="browse-nature-inner">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Colorful_aurora_borealis_%28Unsplash%29.jpg/1280px-Colorful_aurora_borealis_%28Unsplash%29.jpg"
+         alt="Colorful aurora borealis" loading="eager">
+  </div>
+</div>
+
+<div class="browse-toolbar">
+  <input type="text" class="search-box" id="searchBox" placeholder="Search medications..." oninput="filterDrugs()">
+  <select class="sort-select" id="sortSelect" onchange="sortDrugs()">
+    <option value="discount">Best Deal (% Off)</option>
+    <option value="price-low">Price: Low to High</option>
+    <option value="price-high">Price: High to Low</option>
+    <option value="name">Name A-Z</option>
+  </select>
+</div>
+
+<div class="drug-count" id="drugCount">Showing 43 medications</div>
+
+<div class="browse-grid">
+  <div class="drug-grid" id="drugGrid"></div>
+</div>
+
+<footer class="footer">
+  <p>All data from <a href="https://trumprx.gov" target="_blank" rel="noopener">TrumpRx.gov</a>. Drug links open the official site.</p>
+  <p class="footer-parody">PARODY &amp; SATIRE &mdash; Not affiliated with any government agency.</p>
+</footer>
+
+<script>
+var drugs = [
+  { name: "Cetrotide", slug: "cetrotide", price: 22.50, original: 316.12, discount: 93 },
+  { name: "Wegovy Pill", slug: "wegovy-pill", generic: "Semaglutide", maker: "Novo Nordisk", price: 149, original: 1349.02, discount: 89, mo: true },
+  { name: "Bevespi", slug: "bevespi", generic: "Glycopyrrolate/Formoterol", price: 51, original: 458.05, discount: 89 },
+  { name: "Wegovy Pen", slug: "wegovy", generic: "Semaglutide", maker: "Novo Nordisk", price: 199, original: 1349.02, discount: 85, mo: true },
+  { name: "Duavee", slug: "duavee", generic: "Estrogens/Bazedoxifene", price: 30.30, original: 202.00, discount: 85 },
+  { name: "Toviaz", slug: "toviaz", generic: "Fesoterodine Fumarate", price: 43.50, original: 290, discount: 85 },
+  { name: "Gonal-F", slug: "gonal-f", generic: "Follitropin Alfa", price: 168, original: 966.04, discount: 83 },
+  { name: "Ozempic Pen", slug: "ozempic", generic: "Semaglutide", maker: "Novo Nordisk", price: 199, original: 1027.51, discount: 81, mo: true },
+  { name: "Eucrisa", slug: "eucrisa", generic: "Crisaborole", price: 158.48, original: 792.40, discount: 80 },
+  { name: "Zepbound", slug: "zepbound", generic: "Tirzepatide", maker: "Eli Lilly", price: 299, original: 1087, discount: 72, mo: true },
+  { name: "Xigduo XR", slug: "xigduo-xr", generic: "Dapagliflozin/Metformin", price: 181.59, original: 599.72, discount: 70 },
+  { name: "Ovidrel", slug: "ovidrel", generic: "Choriogonadotropin Alfa", price: 84, original: 251.84, discount: 67 },
+  { name: "Prempro", slug: "prempro", generic: "Estrogens/Medroxyprogesterone", price: 98.84, original: 254.30, discount: 61 },
+  { name: "Airsupra", slug: "airsupra", generic: "Albuterol/Budesonide", price: 201, original: 503.93, discount: 60 },
+  { name: "Abrilada", slug: "abrilada", generic: "Adalimumab-afzb", price: 207.60, original: 519, discount: 60 },
+  { name: "Genotropin", slug: "genotropin", generic: "Somatropin", price: 89.67, original: 224.14, discount: 60 },
+  { name: "Estring", slug: "estring", generic: "Estradiol", price: 249, original: 577.18, discount: 57 },
+  { name: "Protonix", slug: "protonix", generic: "Pantoprazole", price: 200.10, original: 447.28, discount: 55 },
+  { name: "Premarin", slug: "premarin", generic: "Conjugated Estrogens", price: 99, original: 217.86, discount: 55 },
+  { name: "Pristiq", slug: "pristiq", generic: "Desvenlafaxine", price: 200.10, original: 435, discount: 54 },
+  { name: "Xeljanz", slug: "xeljanz", generic: "Tofacitinib", price: 1518, original: 3204, discount: 53 },
+  { name: "Farxiga", slug: "farxiga", generic: "Dapagliflozin", price: 181.59, original: 377.82, discount: 52 },
+  { name: "Levoxyl", slug: "levoxyl", generic: "Levothyroxine", price: 35.10, original: 72, discount: 51 },
+  { name: "Cortef", slug: "cortef", generic: "Hydrocortisone", price: 45, original: 91.80, discount: 51 },
+  { name: "Colestid", slug: "colestid", generic: "Colestipol", price: 67.20, original: 135.60, discount: 50 },
+  { name: "Zarontin", slug: "zarontin", generic: "Ethosuximide", price: 71.10, original: 143.46, discount: 50 },
+  { name: "Chantix", slug: "chantix", generic: "Varenicline", price: 94.34, original: 189.74, discount: 50 },
+  { name: "Ngenla", slug: "ngenla", generic: "Somatrogon-ghla", price: 2217, original: 4434.20, discount: 50 },
+  { name: "Nicotrol", slug: "nicotrol", generic: "Nicotine", price: 271.16, original: 542.34, discount: 50 },
+  { name: "Cytomel", slug: "cytomel", generic: "Liothyronine", price: 6, original: 12, discount: 50 },
+  { name: "Diflucan", slug: "diflucan", generic: "Fluconazole", price: 14.06, original: 28.12, discount: 50 },
+  { name: "Lopid", slug: "lopid", generic: "Gemfibrozil", price: 39.60, original: 79.20, discount: 50 },
+  { name: "Medrol", slug: "medrol", generic: "Methylprednisolone", price: 3.15, original: 6.30, discount: 50 },
+  { name: "Premarin Vaginal Cream", slug: "premarin-vaginal-cream", generic: "Conjugated Estrogens", price: 236.65, original: 473.30, discount: 50 },
+  { name: "Tikosyn", slug: "tikosyn", generic: "Dofetilide", price: 336, original: 672, discount: 50 },
+  { name: "Vfend", slug: "vfend", generic: "Voriconazole", price: 306.98, original: 613.96, discount: 50 },
+  { name: "Viracept", slug: "viracept", generic: "Nelfinavir", price: 607.20, original: 1214.40, discount: 50 },
+  { name: "Zyvox", slug: "zyvox", generic: "Linezolid", price: 122.74, original: 245.48, discount: 50 },
+  { name: "Azulfidine", slug: "azulfidine", generic: "Sulfasalazine", price: 99.60, original: 199.20, discount: 50 },
+  { name: "Azulfidine En-Tabs", slug: "azulfidine-en-tabs", generic: "Sulfasalazine", price: 130.80, original: 261.60, discount: 50 },
+  { name: "Cleocin", slug: "cleocin", generic: "Clindamycin", price: 36.56, original: 73.12, discount: 50 },
+  { name: "Zavzpret", slug: "zavzpret", generic: "Zavegepant", price: 594.84, original: 1189.65, discount: 50 },
+  { name: "Insulin Lispro", slug: "insulin-lispro", generic: "Insulin Lispro", price: 25, original: null, discount: null }
+];
+
+function fmt(n) {
+  if (n === null || n === undefined) return "N/A";
+  if (n >= 1000) return "$" + n.toLocaleString("en-US", {minimumFractionDigits: 0, maximumFractionDigits: 2});
+  if (n % 1 === 0) return "$" + n;
+  return "$" + n.toFixed(2);
+}
+
+function renderDrugs(list) {
+  var grid = document.getElementById("drugGrid");
+  grid.innerHTML = "";
+  list.forEach(function(d) {
+    var card = document.createElement("a");
+    card.href = "https://trumprx.gov/p/" + d.slug;
+    card.target = "_blank";
+    card.rel = "noopener";
+    card.className = "drug-card glass";
+    card.dataset.name = d.name.toLowerCase();
+    card.dataset.discount = d.discount || 0;
+    card.dataset.price = d.price;
+
+    var priceStr = fmt(d.price) + (d.mo ? "/mo" : "");
+    var origStr = d.original ? fmt(d.original) : "";
+    var genericStr = d.generic || "";
+    if (d.maker) genericStr += (genericStr ? " \u00B7 " : "") + d.maker;
+
+    card.innerHTML =
+      '<div class="drug-card-name">' + d.name + '</div>' +
+      '<div class="drug-card-generic">' + genericStr + '</div>' +
+      '<div class="drug-card-price">' + priceStr + '</div>' +
+      (origStr ? '<div class="drug-card-original">' + origStr + '</div>' : '') +
+      (d.discount ? '<span class="drug-card-savings">' + d.discount + '% off</span>' : '') +
+      '<span class="drug-card-link">View on TrumpRx \u2192</span>';
+
+    grid.appendChild(card);
+  });
+  document.getElementById("drugCount").textContent = "Showing " + list.length + " medication" + (list.length !== 1 ? "s" : "");
+}
+
+function getFiltered() {
+  var q = document.getElementById("searchBox").value.toLowerCase().trim();
+  return drugs.filter(function(d) {
+    if (!q) return true;
+    return d.name.toLowerCase().indexOf(q) !== -1 ||
+           (d.generic && d.generic.toLowerCase().indexOf(q) !== -1) ||
+           (d.maker && d.maker.toLowerCase().indexOf(q) !== -1);
+  });
+}
+
+function sortDrugs() {
+  var list = getFiltered();
+  var sort = document.getElementById("sortSelect").value;
+  if (sort === "discount") list.sort(function(a,b) { return (b.discount||0) - (a.discount||0); });
+  else if (sort === "price-low") list.sort(function(a,b) { return a.price - b.price; });
+  else if (sort === "price-high") list.sort(function(a,b) { return b.price - a.price; });
+  else if (sort === "name") list.sort(function(a,b) { return a.name.localeCompare(b.name); });
+  renderDrugs(list);
+}
+
+function filterDrugs() { sortDrugs(); }
+
+// Clouds
+(function() {
+  var c = document.getElementById('clouds');
+  var cls = [
+    {w:400,h:120,x:'5%',y:'3%'},{w:500,h:150,x:'30%',y:'6%'},
+    {w:350,h:100,x:'65%',y:'2%'},{w:600,h:160,x:'15%',y:'12%'},
+    {w:450,h:130,x:'55%',y:'10%'},{w:300,h:90,x:'80%',y:'8%'}
+  ];
+  cls.forEach(function(cl){
+    var d=document.createElement('div');d.className='cloud';
+    d.style.width=cl.w+'px';d.style.height=cl.h+'px';
+    d.style.left=cl.x;d.style.top=cl.y;c.appendChild(d);
+  });
+})();
+
+// Bokeh
+(function() {
+  var b = document.getElementById('bokeh');
+  for (var i=0;i<14;i++){
+    var d=document.createElement('div');d.className='bokeh-dot';
+    var s=Math.random()*70+25;d.style.width=s+'px';d.style.height=s+'px';
+    d.style.left=Math.random()*100+'%';d.style.top=Math.random()*100+'%';
+    d.style.animationDelay=(Math.random()*10)+'s';
+    d.style.animationDuration=(Math.random()*15+12)+'s';
+    b.appendChild(d);
+  }
+})();
+
+// Init
+sortDrugs();
+</script>
+
+</body>
+</html>

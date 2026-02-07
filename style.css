@@ -1,0 +1,761 @@
+/* ============================================
+   FruitRx — Frutiger Aero Stylesheet
+   Inspired by Windows Vista/7, Web 2.0 era
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
+
+/* ---------- RESET & BASE ---------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --aero-sky-top: #1a7ad4;
+  --aero-sky-mid: #4aafe0;
+  --aero-sky-light: #b8e4f9;
+  --aero-green: #6dba3a;
+  --aero-green-dark: #4a8c22;
+  --aero-glass-bg: rgba(255, 255, 255, 0.45);
+  --aero-glass-bg-strong: rgba(255, 255, 255, 0.62);
+  --aero-glass-border: rgba(255, 255, 255, 0.7);
+  --aero-glass-shadow: rgba(0, 60, 120, 0.15);
+  --aero-text: #1a2e3d;
+  --aero-text-light: #3a5a6e;
+  --aero-highlight: rgba(255, 255, 255, 0.85);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Segoe UI', 'Open Sans', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--aero-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #1a7ad4;
+}
+
+a { color: inherit; }
+
+/* ---------- BACKGROUND LAYERS ---------- */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background:
+    linear-gradient(180deg,
+      #0d5baa 0%,
+      #2389d4 15%,
+      #57b8ea 30%,
+      #8dd5f5 45%,
+      #c8ecfb 55%,
+      #d4eec4 65%,
+      #8cc63f 80%,
+      #5a9e2a 100%
+    );
+}
+
+/* Clouds layer */
+.clouds {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+.cloud {
+  position: absolute;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 40%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(8px);
+}
+
+/* Bokeh layer */
+.bokeh-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bokeh-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(255,255,255,0.5),
+    rgba(255,255,255,0.15) 40%,
+    rgba(255,255,255,0.05) 70%,
+    transparent
+  );
+  border: 1px solid rgba(255,255,255,0.2);
+  animation: bokehFloat 20s ease-in-out infinite alternate;
+}
+@keyframes bokehFloat {
+  0% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50% { transform: translateY(-30px) scale(1.05); opacity: 0.7; }
+  100% { transform: translateY(10px) scale(0.95); opacity: 0.3; }
+}
+
+/* ---------- GLASS PANEL ---------- */
+.glass {
+  background: var(--aero-glass-bg);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid var(--aero-glass-border);
+  border-radius: 10px;
+  box-shadow:
+    0 4px 20px var(--aero-glass-shadow),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+.glass-strong {
+  background: var(--aero-glass-bg-strong);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--aero-glass-border);
+  border-radius: 10px;
+  box-shadow:
+    0 6px 30px var(--aero-glass-shadow),
+    inset 0 1px 0 var(--aero-highlight);
+}
+
+/* ---------- AERO BUTTONS (Skeuomorphic) ---------- */
+.btn-aero {
+  display: inline-block;
+  padding: 10px 28px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,0,0,0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.15s ease;
+
+  /* The classic Frutiger Aero gradient: lighter at top, darker at bottom */
+  background: linear-gradient(180deg,
+    #5ec0f0 0%,
+    #3ca0e0 35%,
+    #2080cc 65%,
+    #1a6cb8 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 -1px 2px rgba(0,0,0,0.12) inset,
+    0 2px 6px rgba(0,60,120,0.3);
+}
+/* Glossy highlight bar on top half */
+.btn-aero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 48%;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.45) 0%,
+    rgba(255,255,255,0.08) 100%
+  );
+  border-radius: 5px 5px 50% 50%;
+  pointer-events: none;
+}
+.btn-aero:hover {
+  background: linear-gradient(180deg,
+    #72ccf8 0%,
+    #4ab0e8 35%,
+    #2890d8 65%,
+    #2078c4 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 -1px 2px rgba(0,0,0,0.12) inset,
+    0 4px 12px rgba(0,60,120,0.35);
+}
+.btn-aero:active {
+  background: linear-gradient(180deg,
+    #1a6cb8 0%,
+    #2080cc 50%,
+    #3ca0e0 100%
+  );
+}
+
+/* Green variant */
+.btn-aero-green {
+  background: linear-gradient(180deg,
+    #8ed85c 0%,
+    #6dba3a 35%,
+    #529e22 65%,
+    #448818 100%
+  );
+  border-color: rgba(0,0,0,0.2);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 -1px 2px rgba(0,0,0,0.12) inset,
+    0 2px 6px rgba(40,100,0,0.3);
+}
+.btn-aero-green:hover {
+  background: linear-gradient(180deg,
+    #9ee86c 0%,
+    #7dca4a 35%,
+    #62ae32 65%,
+    #4e9820 100%
+  );
+}
+
+/* Silver/neutral variant */
+.btn-aero-silver {
+  background: linear-gradient(180deg,
+    #f0f0f0 0%,
+    #dcdcdc 35%,
+    #c4c4c4 65%,
+    #b0b0b0 100%
+  );
+  color: #333;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  border-color: rgba(0,0,0,0.15);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 2px rgba(0,0,0,0.08) inset,
+    0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ---------- ORB (Frutiger Aero signature element) ---------- */
+.aero-orb {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0,120,220,0.4);
+  flex-shrink: 0;
+}
+.aero-orb::before {
+  content: '';
+  position: absolute;
+  width: 68%;
+  height: 50%;
+  left: 16%;
+  top: 2%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 100%);
+  z-index: 2;
+}
+.aero-orb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 20px 8px rgba(0,100,200,0.3);
+  z-index: 1;
+}
+.aero-orb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- NAVIGATION ---------- */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  background: linear-gradient(180deg,
+    rgba(120,190,240,0.75) 0%,
+    rgba(60,140,210,0.65) 50%,
+    rgba(30,100,180,0.7) 100%
+  );
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid rgba(255,255,255,0.35);
+  box-shadow:
+    0 2px 12px rgba(0,40,80,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+}
+/* Top gloss highlight */
+.nav::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+  pointer-events: none;
+}
+.nav-brand {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,40,80,0.4);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+  position: relative;
+  z-index: 1;
+}
+.nav-links {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  position: relative;
+  z-index: 1;
+}
+.nav-links a {
+  display: block;
+  padding: 6px 18px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.2);
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.nav-links a:hover {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.25);
+}
+
+/* ---------- HERO ---------- */
+.hero {
+  position: relative;
+  padding: 100px 30px 60px;
+  min-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  filter: blur(1px);
+}
+.hero-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(20,90,170,0.4) 0%,
+    rgba(20,90,170,0.15) 40%,
+    rgba(100,180,100,0.15) 70%,
+    rgba(80,160,60,0.3) 100%
+  );
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  text-align: center;
+}
+.hero-card {
+  padding: 50px 60px;
+}
+.hero h1 {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0d3a5c;
+  margin-bottom: 20px;
+  letter-spacing: -0.5px;
+}
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--aero-text-light);
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+/* ---------- NATURE PHOTO STRIP ---------- */
+.nature-strip {
+  position: relative;
+  z-index: 2;
+  height: 180px;
+  overflow: hidden;
+  display: flex;
+}
+.nature-strip img {
+  height: 100%;
+  width: 25%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ---------- SECTIONS ---------- */
+.section {
+  position: relative;
+  z-index: 2;
+  padding: 60px 30px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.section-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #0d3a5c;
+  margin-bottom: 10px;
+}
+.section-desc {
+  font-size: 1rem;
+  color: var(--aero-text-light);
+  max-width: 550px;
+  margin: 0 auto;
+}
+
+/* ---------- COMPARISON PANEL ---------- */
+.comparison-panel {
+  padding: 35px 40px;
+  display: flex;
+  align-items: center;
+  gap: 35px;
+  margin-bottom: 30px;
+}
+.comparison-panel .orb-container {
+  flex-shrink: 0;
+}
+.comparison-info h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0d3a5c;
+  margin-bottom: 16px;
+}
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.price-label {
+  font-size: 0.88rem;
+  color: var(--aero-text-light);
+  width: 180px;
+  flex-shrink: 0;
+}
+.price-old {
+  font-size: 1.2rem;
+  color: #b44;
+  text-decoration: line-through;
+}
+.price-new {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--aero-green-dark);
+}
+.savings-tag {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 16px;
+  background: linear-gradient(180deg, #8ed85c, #5a9e2a);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 4px;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 2px 4px rgba(40,100,0,0.25);
+}
+
+/* ---------- DRUG GRID ---------- */
+.drug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+.drug-card {
+  padding: 22px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+}
+.drug-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 10px 35px var(--aero-glass-shadow),
+    inset 0 1px 0 var(--aero-highlight);
+}
+.drug-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0d3a5c;
+  margin-bottom: 4px;
+}
+.drug-card-generic {
+  font-size: 0.78rem;
+  color: var(--aero-text-light);
+  margin-bottom: 14px;
+}
+.drug-card-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--aero-green-dark);
+  margin-bottom: 2px;
+}
+.drug-card-original {
+  font-size: 0.82rem;
+  color: #b44;
+  text-decoration: line-through;
+  margin-bottom: 8px;
+}
+.drug-card-savings {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #8ed85c, #5a9e2a);
+  border-radius: 3px;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset;
+}
+.drug-card-link {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--aero-sky-top);
+}
+
+/* ---------- QUOTE ---------- */
+.quote-panel {
+  padding: 40px 50px;
+  max-width: 800px;
+  margin: 0 auto 40px;
+  position: relative;
+}
+.quote-mark {
+  position: absolute;
+  top: 15px;
+  left: 25px;
+  font-size: 4rem;
+  color: rgba(0,120,200,0.12);
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.quote-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--aero-text);
+  font-style: italic;
+  position: relative;
+}
+
+/* ---------- FAQ ---------- */
+.faq-list {
+  max-width: 780px;
+  margin: 0 auto;
+}
+.faq-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0d3a5c;
+  margin: 28px 0 12px;
+  padding-left: 4px;
+}
+.faq-item {
+  margin-bottom: 6px;
+}
+.faq-q {
+  width: 100%;
+  text-align: left;
+  padding: 14px 20px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--aero-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: rgba(255,255,255,0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.faq-q:hover {
+  background: rgba(255,255,255,0.5);
+}
+.faq-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+  color: var(--aero-text-light);
+}
+.faq-q.open .faq-arrow {
+  transform: rotate(90deg);
+}
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+  font-size: 0.9rem;
+  color: var(--aero-text-light);
+  line-height: 1.7;
+  padding: 0 20px;
+}
+.faq-a.open {
+  max-height: 250px;
+  padding: 12px 20px 16px;
+}
+
+/* ---------- NOTIFY PANEL ---------- */
+.notify-panel {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 40px;
+  text-align: center;
+}
+.notify-panel h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0d3a5c;
+  margin-bottom: 10px;
+}
+.notify-panel p {
+  font-size: 0.95rem;
+  color: var(--aero-text-light);
+  margin-bottom: 20px;
+}
+
+/* ---------- FOOTER ---------- */
+.footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 40px 30px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+}
+.footer a {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+}
+.footer a:hover { text-decoration: underline; }
+.footer-parody {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.5);
+}
+
+/* ---------- IMAGE PANELS ---------- */
+.nature-panel {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,40,80,0.2);
+}
+.nature-panel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.nature-panel-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,40,80,0.5));
+  display: flex;
+  align-items: flex-end;
+  padding: 20px;
+}
+.nature-panel-overlay p {
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 1.9rem; }
+  .hero-card { padding: 30px 25px; }
+  .hero { min-height: 70vh; padding-top: 80px; }
+  .comparison-panel { flex-direction: column; text-align: center; padding: 25px; }
+  .price-row { flex-direction: column; gap: 2px; }
+  .price-label { width: auto; }
+  .drug-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .section { padding: 40px 16px; }
+  .nav { padding: 0 16px; }
+  .nature-strip { height: 100px; }
+  .nature-strip img { width: 50%; }
+  .quote-panel { padding: 30px; }
+}
+@media (max-width: 480px) {
+  .drug-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 1.6rem; }
+}
+
+/* ---------- WATER REFLECTION BAR ---------- */
+.reflection-bar {
+  height: 60px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.1),
+    rgba(100,200,255,0.15),
+    rgba(255,255,255,0.05)
+  );
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+.reflection-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg,
+    transparent,
+    transparent 40px,
+    rgba(255,255,255,0.05) 40px,
+    rgba(255,255,255,0.05) 80px
+  );
+  animation: reflectionSlide 8s linear infinite;
+}
+@keyframes reflectionSlide {
+  0% { transform: translateX(-80px); }
+  100% { transform: translateX(0); }
+}
+
+/* ---------- PARODY BANNER ---------- */
+.parody-banner {
+  position: relative;
+  z-index: 10;
+  background: linear-gradient(180deg, #f8f0c0, #e8d88a);
+  text-align: center;
+  padding: 6px 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b5800;
+  border-bottom: 1px solid #d4c478;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.5);
+}
+.parody-banner a {
+  color: #4a3d00;
+  text-decoration: underline;
+}
