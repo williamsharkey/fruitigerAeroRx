@@ -435,15 +435,18 @@
   </div>
 </section>
 
-<!-- Remedea: medicinal fairy/goddess assistant -->
+<!-- Fish swim area -->
+<div class="fish-container" id="fishPond"></div>
+
+<!-- Eevee: medicinal fairy/goddess assistant -->
 <div class="assistant-container" id="remedeaContainer">
   <div class="assistant-bubble">
     <button class="assistant-dismiss" aria-label="Close">x</button>
     <div class="assistant-bubble-title">Welcome to FruitRx!</div>
     <div class="assistant-bubble-text">It looks like you're browsing prescription savings. Would you like help finding the best deal?</div>
   </div>
-  <div class="remedea-label font-cabin">Remedea</div>
-  <div class="assistant-figure" id="remedeaFigure" title="Click Remedea for guidance">
+  <div class="remedea-label font-cabin">Eevee</div>
+  <div class="assistant-figure" id="remedeaFigure" title="Click Eevee for guidance">
     <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <!-- White dress gradient -->
@@ -667,7 +670,7 @@
   }
 })();
 
-// Remedea: harmonic sinusoid float animation
+// Eevee: harmonic sinusoid float animation
 (function() {
   var fig = document.getElementById('remedeaFigure');
   if (!fig) return;
@@ -686,14 +689,14 @@
   requestAnimationFrame(animate);
 })();
 
-// Remedea speech bubble
+// Eevee speech bubble
 (function() {
   var msgs = [
-    { title: "Remedea says:", text: "It looks like you're searching for prescription savings. May I help you find the best price?" },
+    { title: "Eevee says:", text: "It looks like you're searching for prescription savings. May I help you find the best price?" },
     { title: "Did you know?", text: "43 medications are available at Most-Favored-Nation pricing. Savings up to 93% off retail." },
     { title: "Guidance", text: "Click any medication card to view full pricing and coupon details on the official TrumpRx.gov." },
     { title: "Pro tip", text: "On the Browse page, you can search by name or sort by discount, price, or alphabetically." },
-    { title: "Remedea", text: "My name comes from the Latin remedium, meaning cure. I am here to guide you to wellness." }
+    { title: "Eevee", text: "My name comes from the Latin remedium, meaning cure. I am here to guide you to wellness." }
   ];
   var container = document.getElementById('remedeaContainer');
   if (!container) return;
@@ -731,6 +734,7 @@ function toggleFaq(btn) {
   }
 }
 </script>
+<script src="app.js"></script>
 
 </body>
 </html>
