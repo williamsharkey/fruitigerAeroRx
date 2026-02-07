@@ -43,15 +43,92 @@
   // 1. AUDIO CONTEXT (lazy init on first user gesture)
   // ================================================================
   var actx = null;
+  var _audioUnlocked = false;
+  var _speechUnlocked = false;
+  var _unmuteAudioEl = null;
+  var _activeUtterance = null; // prevent iOS GC of SpeechSynthesisUtterance
+
   function ensureAudio() {
     if (actx) {
-      // Resume if suspended (browser autoplay policy)
-      if (actx.state === "suspended") actx.resume();
+      // Resume if suspended or interrupted (Safari non-standard state)
+      if (actx.state === "suspended" || actx.state === "interrupted") {
+        actx.resume().catch(function() {});
+      }
       return actx;
     }
     actx = new (window.AudioContext || window.webkitAudioContext)();
     S.audioReady = true;
+    actx.onstatechange = function() {
+      if (actx.state === "suspended" || actx.state === "interrupted") {
+        // Will resume on next user gesture
+      }
+    };
     return actx;
+  }
+
+  // Play silent buffer to unlock iOS audio hardware
+  function _playSilentBuffer(ctx) {
+    try {
+      var buf = ctx.createBuffer(1, 1, ctx.sampleRate || 22050);
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch(e) {}
+  }
+
+  // Silent looping <audio> element bypasses iOS hardware mute switch
+  function _createMuteSwitchBypass() {
+    if (_unmuteAudioEl) return;
+    try {
+      _unmuteAudioEl = document.createElement("audio");
+      _unmuteAudioEl.controls = false;
+      _unmuteAudioEl.preload = "auto";
+      _unmuteAudioEl.loop = true;
+      _unmuteAudioEl.src = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQIAAAAAAA==";
+      var p = _unmuteAudioEl.play();
+      if (p && p.catch) p.catch(function() {});
+    } catch(e) {}
+  }
+
+  // Unlock speechSynthesis with empty utterance on first gesture
+  function _unlockSpeechSynthesis() {
+    if (_speechUnlocked) return;
+    _speechUnlocked = true;
+    try {
+      if (window.speechSynthesis) {
+        var u = new SpeechSynthesisUtterance("");
+        u.volume = 0;
+        speechSynthesis.speak(u);
+        speechSynthesis.getVoices();
+      }
+    } catch(e) {}
+  }
+
+  // Master unlock — called on first user gesture
+  function _unlockAllAudio() {
+    var ctx = ensureAudio();
+    if (ctx.state === "suspended" || ctx.state === "interrupted") {
+      ctx.resume().catch(function() {});
+    }
+    if (!_audioUnlocked) {
+      _audioUnlocked = true;
+      _playSilentBuffer(ctx);
+      _createMuteSwitchBypass();
+    }
+    _unlockSpeechSynthesis();
+  }
+
+  // Re-unlock after tab switch / lock screen / phone call
+  function _handleInterruptRecovery() {
+    if (actx && (actx.state === "suspended" || actx.state === "interrupted")) {
+      actx.resume().catch(function() {});
+      _playSilentBuffer(actx);
+    }
+    if (_unmuteAudioEl && _unmuteAudioEl.paused) {
+      var p = _unmuteAudioEl.play();
+      if (p && p.catch) p.catch(function() {});
+    }
   }
 
   // ================================================================
@@ -60,6 +137,9 @@
   function playSfx(type) {
     if (!S.audioReady) return;
     var ctx = actx;
+    if (ctx.state === "suspended" || ctx.state === "interrupted") {
+      ctx.resume().catch(function() {});
+    }
     var osc, gain, now = ctx.currentTime;
 
     if (type === "click") {
@@ -696,7 +776,12 @@
       src.playbackRate.value = baseRate;
       src.connect(singGainNode);
       src.onended = function() { if (onDone) onDone(); };
-      src.start();
+      // iOS: ensure context is running before start()
+      if (ctx.state === "suspended" || ctx.state === "interrupted") {
+        ctx.resume().then(function() { src.start(); }).catch(function() { if (onDone) onDone(); });
+      } else {
+        src.start();
+      }
     } catch (e) {
       if (onDone) onDone();
     }
@@ -711,12 +796,13 @@
       });
     } else if (window.speechSynthesis) {
       var utter = new SpeechSynthesisUtterance(word);
+      _activeUtterance = utter; // prevent iOS GC before onend fires
       utter.rate = 0.85; utter.pitch = 1.0; utter.volume = 0.4;
       var voices = speechSynthesis.getVoices();
       var preferred = voices.find(function(v) { return /samantha|karen|moira|fiona|victoria/i.test(v.name); });
       if (preferred) utter.voice = preferred;
-      utter.onend = function() { if (onDone) onDone(); };
-      utter.onerror = function() { if (onDone) onDone(); };
+      utter.onend = function() { _activeUtterance = null; if (onDone) onDone(); };
+      utter.onerror = function() { _activeUtterance = null; if (onDone) onDone(); };
       speechSynthesis.speak(utter);
     } else {
       if (onDone) onDone();
@@ -800,6 +886,7 @@
       setTimeout(function() {
         if (S.muted) { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); return; }
         var utter = new SpeechSynthesisUtterance(text);
+        _activeUtterance = utter; // prevent iOS GC
         utter.rate = 0.9;
         utter.pitch = 0.8;
         utter.volume = 0.56;
@@ -807,7 +894,7 @@
         var preferred = voices.find(function(v) { return /alex|daniel|fred|tom/i.test(v.name); });
         if (!preferred) preferred = voices.find(function(v) { return v.lang.startsWith("en") && /male/i.test(v.name); });
         if (preferred) utter.voice = preferred;
-        utter.onend = function() { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); };
+        utter.onend = function() { _activeUtterance = null; S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); };
         utter.onerror = function() { S.speaking = false; S.trumpSpeaking = false; if (onEnd) onEnd(); };
         S.speaking = true;
         speechSynthesis.speak(utter);
@@ -1400,18 +1487,18 @@
     // First click -> init audio, startup sound, autostart music
     var startupPlayed = false;
     function onFirstClick() {
+      // Always unlock/resume (handles interrupt recovery too)
+      _unlockAllAudio();
       if (startupPlayed) return;
       startupPlayed = true;
-      ensureAudio();
       playSfx("startup");
-      // Autostart ambient music after chime
       setTimeout(function() { startMusic(); }, 1200);
-      // Pre-load voices for TTS
-      if (speechSynthesis && speechSynthesis.getVoices) speechSynthesis.getVoices();
     }
-    // Must be click/touch for AudioContext policy
-    document.addEventListener("click", onFirstClick);
-    document.addEventListener("touchstart", onFirstClick, { once: true });
+    // Listen on all gesture types for iOS compatibility
+    ["touchstart", "touchend", "click", "keydown"].forEach(function(evt) {
+      document.addEventListener(evt, onFirstClick, { passive: true });
+      document.addEventListener(evt, _handleInterruptRecovery, { passive: true });
+    });
   }
 
   function tagSections() {
@@ -2162,9 +2249,22 @@
     setupChat();
     setupTrumpNotifications();
 
-    if (speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = function () {};
+    if (window.speechSynthesis) {
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = function() { speechSynthesis.getVoices(); };
+      }
+      speechSynthesis.getVoices();
     }
+
+    // iOS: re-unlock audio when returning from background/lock screen
+    document.addEventListener("visibilitychange", function() {
+      if (document.visibilityState === "visible") {
+        if (_unmuteAudioEl && _unmuteAudioEl.paused) {
+          var p = _unmuteAudioEl.play();
+          if (p && p.catch) p.catch(function() {});
+        }
+      }
+    });
   }
 
   // Start when DOM ready
